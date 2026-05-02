@@ -96,7 +96,7 @@ export default function Home() {
       <Navigation activeSection={activeSection} />
       <ScrollToTop />
 
-      <main className="px-5 md:pl-24 md:pr-48 max-w-7xl mx-auto flex flex-col">
+      <main className="pl-5 pr-8 md:pl-24 md:pr-48 max-w-7xl mx-auto flex flex-col">
         <section id="start" className="min-h-screen flex items-center py-20 md:py-24">
           <Start />
         </section>
@@ -127,7 +127,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 border-t border-primary/10">
-        <div className="px-5 md:pl-24 md:pr-48 max-w-7xl mx-auto py-12 md:py-16 flex flex-col gap-10 md:gap-12">
+        <div className="pl-5 pr-8 md:pl-24 md:pr-48 max-w-7xl mx-auto py-12 md:py-16 flex flex-col gap-10 md:gap-12">
 
           {/* Artist name */}
           <motion.div
