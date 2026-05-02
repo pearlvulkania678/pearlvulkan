@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState, useRef } from "react";
 import { useListTracks } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Listen() {
   const { data: tracks = [], isLoading } = useListTracks();
@@ -114,13 +115,15 @@ export default function Listen() {
                 className="group flex flex-col md:flex-row gap-8 items-start border-l border-primary/20 pl-6 md:pl-8 hover:border-primary transition-colors duration-700"
               >
                 <div className="shrink-0 w-24 h-24 md:w-32 md:h-32 overflow-hidden bg-muted relative">
-                  {track.imagePath && (
+                  {track.imagePath ? (
                     <img
                       src={track.imagePath}
                       alt={track.title}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700 mix-blend-luminosity grayscale group-hover:grayscale-0 group-hover:mix-blend-normal"
                     />
-                  )}
+                  ) : track.soundcloudUrl ? (
+                    <SoundCloudArtwork url={track.soundcloudUrl} title={track.title} />
+                  ) : null}
                   {(hasAudio || (!hasAudio && hasSoundCloud)) && (
                     <button
                       onClick={() =>
@@ -225,6 +228,33 @@ export default function Listen() {
         </div>
       )}
     </div>
+  );
+}
+
+function SoundCloudArtwork({ url, title }: { url: string; title: string }) {
+  const { data: thumbnailUrl, isLoading } = useQuery<string>({
+    queryKey: ["sc-oembed", url],
+    queryFn: () =>
+      fetch(`https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`)
+        .then(r => r.json())
+        .then((d: { thumbnail_url?: string }) => d.thumbnail_url ?? ""),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    enabled: !!url,
+    retry: false,
+  });
+
+  if (isLoading) {
+    return <div className="w-full h-full animate-pulse bg-[#c9b77a]/5" />;
+  }
+  if (!thumbnailUrl) return null;
+
+  return (
+    <img
+      src={thumbnailUrl}
+      alt={title}
+      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700 mix-blend-luminosity grayscale group-hover:grayscale-0 group-hover:mix-blend-normal"
+    />
   );
 }
 
