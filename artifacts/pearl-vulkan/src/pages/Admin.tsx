@@ -42,8 +42,8 @@ const TAB_LABELS: Record<Tab, string> = { tracks: "listen", see: "see", touch: "
 // ─── Types matching DB shape ──────────────────────────────────────────────────
 interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem    { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
-interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string; imagePath: string | null; linkUrl: string | null; published: boolean; sortOrder: number; }
-interface AdminSense   { id: number; title: string; date: string | null; location: string | null; description: string; imagePath: string | null; linkUrl: string | null; published: boolean; sortOrder: number; }
+interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
+interface AdminSense   { id: number; title: string; date: string | null; location: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
 
 // ─── Admin-specific fetchers (see all, incl. drafts) ────────────────────────
 const fetchAdminTracks = () => fetch(`${BASE}api/admin/tracks`).then(r => r.json()) as Promise<AdminTrack[]>;
@@ -1117,7 +1117,7 @@ function TouchPanel() {
   const { data: items = [], isLoading } = useQuery<AdminTouch[]>({ queryKey: adminTouchKey, queryFn: fetchAdminTouch });
   const [editing, setEditing] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState<Omit<AdminTouch, "id" | "sortOrder">>({ title: "", subtitle: null, description: "", imagePath: null, linkUrl: null, published: false });
+  const [form, setForm] = useState<Omit<AdminTouch, "id" | "sortOrder">>({ title: "", subtitle: null, description: null, imagePath: null, linkUrl: null, content: "[]", published: false });
   const [saving, setSaving] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -1125,7 +1125,7 @@ function TouchPanel() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: adminTouchKey });
 
-  const resetForm = () => { setForm({ title: "", subtitle: null, description: "", imagePath: null, linkUrl: null, published: false }); setAdding(false); setEditing(null); };
+  const resetForm = () => { setForm({ title: "", subtitle: null, description: null, imagePath: null, linkUrl: null, content: "[]", published: false }); setAdding(false); setEditing(null); };
 
   const save = async () => {
     setSaving(true);
@@ -1163,7 +1163,7 @@ function TouchPanel() {
     await invalidate();
   };
 
-  const startEdit = (item: AdminTouch) => { setForm({ title: item.title, subtitle: item.subtitle, description: item.description, imagePath: item.imagePath, linkUrl: item.linkUrl, published: item.published }); setEditing(item.id); setAdding(false); };
+  const startEdit = (item: AdminTouch) => { setForm({ title: item.title, subtitle: item.subtitle, description: item.description, imagePath: item.imagePath, linkUrl: item.linkUrl, content: item.content || "[]", published: item.published }); setEditing(item.id); setAdding(false); };
 
   return (
     <div className="flex flex-col gap-6">
@@ -1199,29 +1199,82 @@ function SortableTouchRow({ item, onEdit, onDelete, onToggle, editing }: { item:
   return (
     <div ref={setNodeRef} style={style} className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
       <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
-      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover opacity-80 shrink-0" />}
       <div className="flex-1 min-w-0">
         <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80 truncate">{item.title}</p>
         {item.subtitle && <p className="text-[9px] text-[#c9b77a]/40 tracking-wider truncate">{item.subtitle}</p>}
+        <PoemContentPreview content={item.content || "[]"} published={item.published} />
       </div>
-      <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
-      <button onClick={() => onToggle(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Toggle</button>
-      <button onClick={() => onEdit(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Edit</button>
-      <button onClick={() => onDelete(item.id)} className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2">Del</button>
+      <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 shrink-0 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
+      <button onClick={() => onToggle(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2 shrink-0">Toggle</button>
+      <button onClick={() => onEdit(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2 shrink-0">Edit</button>
+      <button onClick={() => onDelete(item.id)} className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2 shrink-0">Del</button>
     </div>
   );
 }
 
 function TouchForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form: Omit<AdminTouch, "id" | "sortOrder">; onChange: (f: Omit<AdminTouch, "id" | "sortOrder">) => void; onSave: () => void; onCancel: () => void; saving: boolean; isEdit: boolean }) {
+  const [blocks, setBlocks] = useState<PoemBlockWithId[]>(() =>
+    parsePoemBlocks(form.content || "[]").map(withBlockId)
+  );
+  const blockSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const updateBlocks = (next: PoemBlockWithId[]) => {
+    setBlocks(next);
+    onChange({ ...form, content: JSON.stringify(next.map(({ _id: _d, ...b }) => b)) });
+  };
+
+  const addText  = () => updateBlocks([...blocks, withBlockId({ type: "text",  value: "" })]);
+  const addImage = () => updateBlocks([...blocks, withBlockId({ type: "image", src: "", caption: "" })]);
+  const addVideo = () => updateBlocks([...blocks, withBlockId({ type: "video", src: "", caption: "" })]);
+  const removeBlock = (id: string) => updateBlocks(blocks.filter(b => b._id !== id));
+
+  const handleBlockDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = blocks.findIndex(b => b._id === active.id);
+    const newIdx = blocks.findIndex(b => b._id === over.id);
+    updateBlocks(arrayMove(blocks, oldIdx, newIdx));
+  };
+
   return (
-    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
+    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-5 bg-[#161515]">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Title"><input className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} placeholder="Work title" /></Field>
         <Field label="Subtitle"><input className="admin-input" value={form.subtitle ?? ""} onChange={e => onChange({ ...form, subtitle: e.target.value || null })} placeholder="e.g. Album / Series" /></Field>
         <Field label="Link URL"><input className="admin-input" value={form.linkUrl ?? ""} onChange={e => onChange({ ...form, linkUrl: e.target.value || null })} placeholder="https://..." /></Field>
       </div>
-      <Field label="Description"><textarea className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
-      <ImageUploadField inputId="touch-image-input" value={form.imagePath ?? ""} onChange={v => onChange({ ...form, imagePath: v || null })} />
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Content Blocks</label>
+            <span className="text-[8px] text-[#c9b77a]/25 tracking-wider">drag to reorder blocks</span>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={addText}  className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
+            <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
+            <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
+          </div>
+        </div>
+        <DndContext sensors={blockSensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
+          <SortableContext items={blocks.map(b => b._id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-3">
+              {blocks.map((block, i) => (
+                <SortableBlockRow key={block._id} block={block} index={i}
+                  onRemove={() => removeBlock(block._id)}
+                  onUpdate={(updated) => { const next = [...blocks]; next[i] = { ...updated, _id: block._id }; updateBlocks(next); }}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+        {blocks.length === 0 && (
+          <div className="border border-dashed border-[#c9b77a]/10 py-8 flex items-center justify-center">
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, or video above</span>
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 cursor-pointer">
           <div onClick={() => onChange({ ...form, published: !form.published })} className={`w-8 h-4 rounded-full transition-colors duration-300 ${form.published ? "bg-[#c9b77a]/60" : "bg-[#c9b77a]/10"}`}>
@@ -1246,7 +1299,7 @@ function SensePanel() {
   const { data: items = [], isLoading } = useQuery<AdminSense[]>({ queryKey: adminSenseKey, queryFn: fetchAdminSense });
   const [editing, setEditing] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState<Omit<AdminSense, "id" | "sortOrder">>({ title: "", date: null, location: null, description: "", imagePath: null, linkUrl: null, published: false });
+  const [form, setForm] = useState<Omit<AdminSense, "id" | "sortOrder">>({ title: "", date: null, location: null, description: null, imagePath: null, linkUrl: null, content: "[]", published: false });
   const [saving, setSaving] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -1254,7 +1307,7 @@ function SensePanel() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: adminSenseKey });
 
-  const resetForm = () => { setForm({ title: "", date: null, location: null, description: "", imagePath: null, linkUrl: null, published: false }); setAdding(false); setEditing(null); };
+  const resetForm = () => { setForm({ title: "", date: null, location: null, description: null, imagePath: null, linkUrl: null, content: "[]", published: false }); setAdding(false); setEditing(null); };
 
   const save = async () => {
     setSaving(true);
@@ -1292,7 +1345,7 @@ function SensePanel() {
     await invalidate();
   };
 
-  const startEdit = (item: AdminSense) => { setForm({ title: item.title, date: item.date, location: item.location, description: item.description, imagePath: item.imagePath, linkUrl: item.linkUrl, published: item.published }); setEditing(item.id); setAdding(false); };
+  const startEdit = (item: AdminSense) => { setForm({ title: item.title, date: item.date, location: item.location, description: item.description, imagePath: item.imagePath, linkUrl: item.linkUrl, content: item.content || "[]", published: item.published }); setEditing(item.id); setAdding(false); };
 
   return (
     <div className="flex flex-col gap-6">
@@ -1328,30 +1381,83 @@ function SortableSenseRow({ item, onEdit, onDelete, onToggle, editing }: { item:
   return (
     <div ref={setNodeRef} style={style} className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
       <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
-      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover opacity-80 shrink-0" />}
       <div className="flex-1 min-w-0">
         <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80 truncate">{item.title}</p>
         <p className="text-[9px] text-[#c9b77a]/40 tracking-wider">{[item.date, item.location].filter(Boolean).join(" · ")}</p>
+        <PoemContentPreview content={item.content || "[]"} published={item.published} />
       </div>
-      <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
-      <button onClick={() => onToggle(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Toggle</button>
-      <button onClick={() => onEdit(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Edit</button>
-      <button onClick={() => onDelete(item.id)} className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2">Del</button>
+      <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 shrink-0 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
+      <button onClick={() => onToggle(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2 shrink-0">Toggle</button>
+      <button onClick={() => onEdit(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2 shrink-0">Edit</button>
+      <button onClick={() => onDelete(item.id)} className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2 shrink-0">Del</button>
     </div>
   );
 }
 
 function SenseForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form: Omit<AdminSense, "id" | "sortOrder">; onChange: (f: Omit<AdminSense, "id" | "sortOrder">) => void; onSave: () => void; onCancel: () => void; saving: boolean; isEdit: boolean }) {
+  const [blocks, setBlocks] = useState<PoemBlockWithId[]>(() =>
+    parsePoemBlocks(form.content || "[]").map(withBlockId)
+  );
+  const blockSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const updateBlocks = (next: PoemBlockWithId[]) => {
+    setBlocks(next);
+    onChange({ ...form, content: JSON.stringify(next.map(({ _id: _d, ...b }) => b)) });
+  };
+
+  const addText  = () => updateBlocks([...blocks, withBlockId({ type: "text",  value: "" })]);
+  const addImage = () => updateBlocks([...blocks, withBlockId({ type: "image", src: "", caption: "" })]);
+  const addVideo = () => updateBlocks([...blocks, withBlockId({ type: "video", src: "", caption: "" })]);
+  const removeBlock = (id: string) => updateBlocks(blocks.filter(b => b._id !== id));
+
+  const handleBlockDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = blocks.findIndex(b => b._id === active.id);
+    const newIdx = blocks.findIndex(b => b._id === over.id);
+    updateBlocks(arrayMove(blocks, oldIdx, newIdx));
+  };
+
   return (
-    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
+    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-5 bg-[#161515]">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Title"><input className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} placeholder="Event / Exhibition title" /></Field>
         <Field label="Date"><input className="admin-input" value={form.date ?? ""} onChange={e => onChange({ ...form, date: e.target.value || null })} placeholder="2025 / Spring" /></Field>
         <Field label="Location"><input className="admin-input" value={form.location ?? ""} onChange={e => onChange({ ...form, location: e.target.value || null })} placeholder="City, Venue" /></Field>
         <Field label="Link URL"><input className="admin-input" value={form.linkUrl ?? ""} onChange={e => onChange({ ...form, linkUrl: e.target.value || null })} placeholder="https://..." /></Field>
       </div>
-      <Field label="Description"><textarea className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
-      <ImageUploadField inputId="sense-image-input" value={form.imagePath ?? ""} onChange={v => onChange({ ...form, imagePath: v || null })} />
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Content Blocks</label>
+            <span className="text-[8px] text-[#c9b77a]/25 tracking-wider">drag to reorder blocks</span>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={addText}  className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
+            <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
+            <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
+          </div>
+        </div>
+        <DndContext sensors={blockSensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
+          <SortableContext items={blocks.map(b => b._id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-3">
+              {blocks.map((block, i) => (
+                <SortableBlockRow key={block._id} block={block} index={i}
+                  onRemove={() => removeBlock(block._id)}
+                  onUpdate={(updated) => { const next = [...blocks]; next[i] = { ...updated, _id: block._id }; updateBlocks(next); }}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+        {blocks.length === 0 && (
+          <div className="border border-dashed border-[#c9b77a]/10 py-8 flex items-center justify-center">
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, or video above</span>
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 cursor-pointer">
           <div onClick={() => onChange({ ...form, published: !form.published })} className={`w-8 h-4 rounded-full transition-colors duration-300 ${form.published ? "bg-[#c9b77a]/60" : "bg-[#c9b77a]/10"}`}>

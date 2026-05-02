@@ -20,15 +20,16 @@ router.get("/admin/sense", async (req, res): Promise<void> => {
 });
 
 router.post("/sense", async (req, res): Promise<void> => {
-  const { title, date, location, description, imagePath, linkUrl, published, sortOrder } = req.body as Record<string, unknown>;
-  if (!title || !description) { res.status(400).json({ error: "title and description required" }); return; }
+  const { title, date, location, description, imagePath, linkUrl, content, published, sortOrder } = req.body as Record<string, unknown>;
+  if (!title) { res.status(400).json({ error: "title required" }); return; }
   const [item] = await db.insert(senseTable).values({
     title: title as string,
     date: (date as string | null) ?? null,
     location: (location as string | null) ?? null,
-    description: description as string,
+    description: (description as string | null) ?? null,
     imagePath: (imagePath as string | null) ?? null,
     linkUrl: (linkUrl as string | null) ?? null,
+    content: typeof content === "string" ? content : "[]",
     published: published !== false,
     sortOrder: typeof sortOrder === "number" ? sortOrder : 0,
   }).returning();
@@ -44,9 +45,10 @@ router.patch("/sense/:id", async (req, res): Promise<void> => {
   if ("title" in body)       patch.title       = body.title as string;
   if ("date" in body)        patch.date        = (body.date as string | null) ?? null;
   if ("location" in body)    patch.location    = (body.location as string | null) ?? null;
-  if ("description" in body) patch.description = body.description as string;
+  if ("description" in body) patch.description = (body.description as string | null) ?? null;
   if ("imagePath" in body)   patch.imagePath   = (body.imagePath as string | null) ?? null;
   if ("linkUrl" in body)     patch.linkUrl     = (body.linkUrl as string | null) ?? null;
+  if ("content" in body)     patch.content     = typeof body.content === "string" ? body.content : "[]";
   if ("published" in body)   patch.published   = body.published as boolean;
   if ("sortOrder" in body)   patch.sortOrder   = body.sortOrder as number;
   const [item] = await db.update(senseTable).set(patch).where(eq(senseTable.id, id)).returning();
