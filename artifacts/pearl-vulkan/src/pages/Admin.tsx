@@ -213,36 +213,21 @@ function TracksPanel() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={tracks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {tracks.map(t => {
-              const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(t.id);
-              return (
-                <div key={t.id} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-                  data-testid={`track-row-${t.id}`} className="border border-[#c9b77a]/15 flex">
-                  <DragHandle {...attributes} {...listeners} />
-                  <div className="flex-1 p-4">
-                    {editing === t.id ? (
-                      <TrackForm form={form} onChange={setForm} onSave={() => handleUpdate(t.id)} onCancel={() => setEditing(null)} saving={updateTrack.isPending} label="Save" />
-                    ) : (
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex flex-col gap-1 flex-1 min-w-0">
-                          <div className="flex items-baseline gap-3 flex-wrap">
-                            <span className={`font-serif text-lg ${t.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{t.title}</span>
-                            <span className="text-[10px] tracking-widest text-[#c9b77a]/50">{t.duration}</span>
-                            <PublishToggle published={t.published} onToggle={() => handleTogglePublish(t)} saving={updateTrack.isPending} />
-                          </div>
-                          <span className="text-[9px] tracking-[0.2em] text-[#c9b77a]/60 uppercase">{t.genre}</span>
-                          <p className="text-xs text-[#c9b77a]/40 mt-1 leading-relaxed line-clamp-2">{t.description}</p>
-                        </div>
-                        <div className="flex gap-3 shrink-0">
-                          <button data-testid={`edit-track-${t.id}`} onClick={() => startEdit(t)} className="admin-action">Edit</button>
-                          <button data-testid={`delete-track-${t.id}`} onClick={() => handleDelete(t.id)} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {tracks.map(t => (
+              <SortableTrackRow
+                key={t.id}
+                track={t}
+                isEditing={editing === t.id}
+                form={form}
+                onFormChange={setForm}
+                onSave={() => handleUpdate(t.id)}
+                onCancelEdit={() => setEditing(null)}
+                onStartEdit={() => startEdit(t)}
+                onDelete={() => handleDelete(t.id)}
+                onTogglePublish={() => handleTogglePublish(t)}
+                saving={updateTrack.isPending}
+              />
+            ))}
           </div>
         </SortableContext>
       </DndContext>
@@ -313,37 +298,21 @@ function PoemsPanel() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={poems.map(p => p.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {poems.map(p => {
-              const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(p.id);
-              return (
-                <div key={p.id} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-                  data-testid={`poem-row-${p.id}`} className="border border-[#c9b77a]/15 flex">
-                  <DragHandle {...attributes} {...listeners} />
-                  <div className="flex-1 p-4">
-                    {editing === p.id ? (
-                      <PoemForm form={form} onChange={setForm} onSave={() => handleUpdate(p.id)} onCancel={() => setEditing(null)} saving={updatePoem.isPending} label="Save" />
-                    ) : (
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex flex-col gap-2 flex-1 min-w-0">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            {p.title && <span className={`font-serif text-base italic ${p.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{p.title}</span>}
-                            <PublishToggle published={p.published} onToggle={() => handleTogglePublish(p)} saving={updatePoem.isPending} />
-                          </div>
-                          <pre className={`text-xs whitespace-pre-wrap font-sans leading-relaxed line-clamp-3 ${p.published ? "text-[#c9b77a]/50" : "text-[#c9b77a]/25"}`}>{p.content}</pre>
-                          <div className="flex gap-2 flex-wrap mt-1">
-                            {p.tags.map(tag => <span key={tag} className="text-[9px] tracking-widest text-[#c9b77a]/40 border border-[#c9b77a]/20 px-2 py-0.5">{tag}</span>)}
-                          </div>
-                        </div>
-                        <div className="flex gap-3 shrink-0">
-                          <button data-testid={`edit-poem-${p.id}`} onClick={() => startEdit(p)} className="admin-action">Edit</button>
-                          <button data-testid={`delete-poem-${p.id}`} onClick={() => handleDelete(p.id)} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {poems.map(p => (
+              <SortablePoemRow
+                key={p.id}
+                poem={p}
+                isEditing={editing === p.id}
+                form={form}
+                onFormChange={setForm}
+                onSave={() => handleUpdate(p.id)}
+                onCancelEdit={() => setEditing(null)}
+                onStartEdit={() => startEdit(p)}
+                onDelete={() => handleDelete(p.id)}
+                onTogglePublish={() => handleTogglePublish(p)}
+                saving={updatePoem.isPending}
+              />
+            ))}
           </div>
         </SortableContext>
       </DndContext>
@@ -410,34 +379,21 @@ function GalleryPanel() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map(g => g.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {items.map(item => {
-              const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(item.id);
-              return (
-                <div key={item.id} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-                  data-testid={`gallery-row-${item.id}`} className="border border-[#c9b77a]/15 flex">
-                  <DragHandle {...attributes} {...listeners} />
-                  <div className="flex-1 p-4">
-                    {editing === item.id ? (
-                      <GalleryForm form={form} onChange={setForm} onSave={() => handleUpdate(item.id)} onCancel={() => setEditing(null)} saving={updateItem.isPending} label="Save" />
-                    ) : (
-                      <div className="flex items-center gap-4">
-                        <div className={`w-20 h-16 overflow-hidden bg-[#1a1919] shrink-0 ${!item.published ? "opacity-30" : ""}`}>
-                          <img src={item.src} alt={item.caption} className="w-full h-full object-cover grayscale" />
-                        </div>
-                        <div className="flex-1 min-w-0 flex flex-col gap-1">
-                          <span className={`text-[9px] tracking-[0.25em] uppercase ${item.published ? "text-[#c9b77a]/60" : "text-[#c9b77a]/25"}`}>{item.caption}</span>
-                          <PublishToggle published={item.published} onToggle={() => handleTogglePublish(item)} saving={updateItem.isPending} />
-                        </div>
-                        <div className="flex gap-3 shrink-0">
-                          <button data-testid={`edit-gallery-${item.id}`} onClick={() => startEdit(item)} className="admin-action">Edit</button>
-                          <button data-testid={`delete-gallery-${item.id}`} onClick={() => handleDelete(item.id)} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {items.map(item => (
+              <SortableGalleryRow
+                key={item.id}
+                item={item}
+                isEditing={editing === item.id}
+                form={form}
+                onFormChange={setForm}
+                onSave={() => handleUpdate(item.id)}
+                onCancelEdit={() => setEditing(null)}
+                onStartEdit={() => startEdit(item)}
+                onDelete={() => handleDelete(item.id)}
+                onTogglePublish={() => handleTogglePublish(item)}
+                saving={updateItem.isPending}
+              />
+            ))}
           </div>
         </SortableContext>
       </DndContext>
@@ -445,9 +401,117 @@ function GalleryPanel() {
   );
 }
 
-// ─── Hook helper ──────────────────────────────────────────────────────────────
-function useSortableItem(id: number) {
-  return useSortable({ id });
+// ─── Sortable row components (hooks must be at component top level, not in .map) ─
+type TrackFormState = { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; hasListen: boolean };
+type PoemFormState  = { title: string; content: string; tags: string };
+type GalleryFormState = { src: string; caption: string };
+
+function SortableTrackRow({ track, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
+  track: AdminTrack; isEditing: boolean;
+  form: TrackFormState; onFormChange: (f: TrackFormState) => void;
+  onSave: () => void; onCancelEdit: () => void; onStartEdit: () => void;
+  onDelete: () => void; onTogglePublish: () => void; saving: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: track.id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      data-testid={`track-row-${track.id}`} className="border border-[#c9b77a]/15 flex">
+      <DragHandle {...attributes} {...listeners} />
+      <div className="flex-1 p-4">
+        {isEditing ? (
+          <TrackForm form={form} onChange={onFormChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
+        ) : (
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className={`font-serif text-lg ${track.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{track.title}</span>
+                <span className="text-[10px] tracking-widest text-[#c9b77a]/50">{track.duration}</span>
+                <PublishToggle published={track.published} onToggle={onTogglePublish} saving={saving} />
+              </div>
+              <span className="text-[9px] tracking-[0.2em] text-[#c9b77a]/60 uppercase">{track.genre}</span>
+              <p className="text-xs text-[#c9b77a]/40 mt-1 leading-relaxed line-clamp-2">{track.description}</p>
+              {track.audioPath && <span className="text-[8px] tracking-widest text-[#c9b77a]/30 uppercase mt-1">♪ audio attached</span>}
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <button data-testid={`edit-track-${track.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
+              <button data-testid={`delete-track-${track.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SortablePoemRow({ poem, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
+  poem: AdminPoem; isEditing: boolean;
+  form: PoemFormState; onFormChange: (f: PoemFormState) => void;
+  onSave: () => void; onCancelEdit: () => void; onStartEdit: () => void;
+  onDelete: () => void; onTogglePublish: () => void; saving: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: poem.id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      data-testid={`poem-row-${poem.id}`} className="border border-[#c9b77a]/15 flex">
+      <DragHandle {...attributes} {...listeners} />
+      <div className="flex-1 p-4">
+        {isEditing ? (
+          <PoemForm form={form} onChange={onFormChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
+        ) : (
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-2 flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                {poem.title && <span className={`font-serif text-base italic ${poem.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{poem.title}</span>}
+                <PublishToggle published={poem.published} onToggle={onTogglePublish} saving={saving} />
+              </div>
+              <pre className={`text-xs whitespace-pre-wrap font-sans leading-relaxed line-clamp-3 ${poem.published ? "text-[#c9b77a]/50" : "text-[#c9b77a]/25"}`}>{poem.content}</pre>
+              <div className="flex gap-2 flex-wrap mt-1">
+                {poem.tags.map(tag => <span key={tag} className="text-[9px] tracking-widest text-[#c9b77a]/40 border border-[#c9b77a]/20 px-2 py-0.5">{tag}</span>)}
+              </div>
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <button data-testid={`edit-poem-${poem.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
+              <button data-testid={`delete-poem-${poem.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SortableGalleryRow({ item, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
+  item: AdminGallery; isEditing: boolean;
+  form: GalleryFormState; onFormChange: (f: GalleryFormState) => void;
+  onSave: () => void; onCancelEdit: () => void; onStartEdit: () => void;
+  onDelete: () => void; onTogglePublish: () => void; saving: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      data-testid={`gallery-row-${item.id}`} className="border border-[#c9b77a]/15 flex">
+      <DragHandle {...attributes} {...listeners} />
+      <div className="flex-1 p-4">
+        {isEditing ? (
+          <GalleryForm form={form} onChange={onFormChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className={`w-20 h-16 overflow-hidden bg-[#1a1919] shrink-0 ${!item.published ? "opacity-30" : ""}`}>
+              <img src={item.src} alt={item.caption} className="w-full h-full object-cover grayscale" />
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col gap-1">
+              <span className={`text-[9px] tracking-[0.25em] uppercase ${item.published ? "text-[#c9b77a]/60" : "text-[#c9b77a]/25"}`}>{item.caption}</span>
+              <PublishToggle published={item.published} onToggle={onTogglePublish} saving={saving} />
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <button data-testid={`edit-gallery-${item.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
+              <button data-testid={`delete-gallery-${item.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Shared form components ───────────────────────────────────────────────────
