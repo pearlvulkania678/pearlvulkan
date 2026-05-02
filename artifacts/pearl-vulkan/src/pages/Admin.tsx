@@ -42,7 +42,7 @@ type Tab = "start" | "tracks" | "see" | "touch" | "sense" | "log";
 const TAB_LABELS: Record<Tab, string> = { start: "start", tracks: "listen", see: "see", touch: "touch", sense: "sense", log: "log" };
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
-interface AdminStart   { id: number; artistName: string; quote: string; tagline: string; backgroundImage: string | null; }
+interface AdminStart   { id: number; artistName: string; quote: string; tagline: string; backgroundImage: string | null; bgOpacity: number; }
 interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem    { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
 interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
@@ -172,12 +172,12 @@ function AdminPanel() {
 function StartPanel() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery<AdminStart>({ queryKey: adminStartKey, queryFn: fetchAdminStart });
-  const [form, setForm] = useState<Omit<AdminStart, "id">>({ artistName: "Pearl Vulkan", quote: "", tagline: "", backgroundImage: null });
+  const [form, setForm] = useState<Omit<AdminStart, "id">>({ artistName: "Pearl Vulkan", quote: "", tagline: "", backgroundImage: null, bgOpacity: 15 });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (data) setForm({ artistName: data.artistName, quote: data.quote, tagline: data.tagline, backgroundImage: data.backgroundImage });
+    if (data) setForm({ artistName: data.artistName, quote: data.quote, tagline: data.tagline, backgroundImage: data.backgroundImage, bgOpacity: data.bgOpacity ?? 15 });
   }, [data]);
 
   const handleSave = async () => {
@@ -230,6 +230,37 @@ function StartPanel() {
         </Field>
 
         <ImageUploadField inputId="start-bg-input" value={form.backgroundImage ?? ""} onChange={v => setForm(f => ({ ...f, backgroundImage: v || null }))} />
+
+        {form.backgroundImage && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Background Transparency</label>
+              <span className="text-[9px] tracking-widest text-[#c9b77a]/60 font-mono">{form.bgOpacity}%</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[8px] text-[#c9b77a]/25 tracking-wider w-12">Invisible</span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={form.bgOpacity}
+                onChange={e => setForm(f => ({ ...f, bgOpacity: Number(e.target.value) }))}
+                className="flex-1 h-0.5 appearance-none bg-[#c9b77a]/20 outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#c9b77a]"
+              />
+              <span className="text-[8px] text-[#c9b77a]/25 tracking-wider w-10 text-right">Full</span>
+            </div>
+            <div
+              className="h-10 w-full mt-1 border border-[#c9b77a]/10"
+              style={{
+                backgroundImage: `url(${form.backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                opacity: form.bgOpacity / 100,
+              }}
+            />
+          </div>
+        )}
 
         <div className="flex justify-end pt-2">
           <button

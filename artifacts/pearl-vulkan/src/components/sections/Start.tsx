@@ -8,6 +8,7 @@ interface StartSettings {
   quote: string;
   tagline: string;
   backgroundImage: string | null;
+  bgOpacity: number;
 }
 
 const DEFAULTS: StartSettings = {
@@ -15,6 +16,7 @@ const DEFAULTS: StartSettings = {
   quote: "There are places in the dark where the sound settles, where dust catches the amber light, and the silence has a shape.",
   tagline: "Enter. Slowly.",
   backgroundImage: null,
+  bgOpacity: 15,
 };
 
 function useStartSettings() {
@@ -24,6 +26,24 @@ function useStartSettings() {
     staleTime: 60_000,
     placeholderData: DEFAULTS,
   });
+}
+
+export function StartBackground() {
+  const { data } = useStartSettings();
+  const s = data ?? DEFAULTS;
+  if (!s.backgroundImage) return null;
+  return (
+    <div
+      className="fixed inset-0 -z-10 pointer-events-none"
+      style={{ opacity: (s.bgOpacity ?? 15) / 100 }}
+    >
+      <img
+        src={s.backgroundImage}
+        alt=""
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
 }
 
 export default function Start() {
@@ -36,21 +56,11 @@ export default function Start() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 2, ease: "easeOut" }}
-      className="w-full flex flex-col items-start justify-center relative"
+      className="w-full flex flex-col items-start justify-center"
     >
-      {s.backgroundImage && (
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          <img
-            src={s.backgroundImage}
-            alt=""
-            className="w-full h-full object-cover opacity-10"
-          />
-        </div>
-      )}
-
       <h1 className="font-serif text-5xl md:text-8xl tracking-[0.1em] text-primary uppercase mb-12">
-        {s.artistName.split(" ").map((word, i) => (
-          <span key={i}>{word}{i < s.artistName.split(" ").length - 1 ? <br /> : ""}</span>
+        {s.artistName.split(" ").map((word, i, arr) => (
+          <span key={i}>{word}{i < arr.length - 1 ? <br /> : ""}</span>
         ))}
       </h1>
 

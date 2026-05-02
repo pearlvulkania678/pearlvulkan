@@ -6,6 +6,7 @@ export const startSettingsTable = pgTable("start_settings", {
   quote: text("quote").notNull().default("There are places in the dark where the sound settles, where dust catches the amber light, and the silence has a shape."),
   tagline: text("tagline").notNull().default("Enter. Slowly."),
   backgroundImage: text("background_image"),
+  bgOpacity: integer("bg_opacity").notNull().default(15),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

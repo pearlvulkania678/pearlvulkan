@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import Start from "@/components/sections/Start";
+import Start, { StartBackground } from "@/components/sections/Start";
 import Listen from "@/components/sections/Listen";
 import See from "@/components/sections/See";
 import Touch from "@/components/sections/Touch";
@@ -37,6 +37,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative overflow-hidden">
+      {/* Persistent background image */}
+      <StartBackground />
       {/* Background atmospheric grain */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-50 mix-blend-overlay" style={{ backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')" }}></div>
 
