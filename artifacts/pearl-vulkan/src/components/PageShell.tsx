@@ -2,13 +2,11 @@ import { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import Navigation from "@/components/Navigation";
-import { StartBackground } from "@/components/sections/Start";
 
 export default function PageShell({ children }: { children: ReactNode }) {
   const [, navigate] = useLocation();
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative">
-      <StartBackground />
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.03] z-50 mix-blend-overlay"
         style={{ backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')" }}
