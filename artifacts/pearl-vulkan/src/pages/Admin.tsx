@@ -407,14 +407,17 @@ type PoemFormState  = { title: string; content: string; tags: string };
 type GalleryFormState = { src: string; caption: string };
 
 // ─── Poem block types ──────────────────────────────────────────────────────────
-type PoemBlock = { type: "text"; value: string } | { type: "image"; src: string; caption: string };
+type PoemBlock =
+  | { type: "text"; value: string }
+  | { type: "image"; src: string; caption: string }
+  | { type: "video"; src: string; caption: string };
 function parsePoemBlocks(content: string): PoemBlock[] {
   try { const p = JSON.parse(content); if (Array.isArray(p)) return p as PoemBlock[]; } catch {}
   return [{ type: "text", value: content }];
 }
 function blocksToContent(blocks: PoemBlock[]): string {
-  const hasImage = blocks.some(b => b.type === "image");
-  if (!hasImage && blocks.length === 1 && blocks[0].type === "text") return blocks[0].value;
+  const isRich = blocks.some(b => b.type === "image" || b.type === "video");
+  if (!isRich && blocks.length === 1 && blocks[0].type === "text") return blocks[0].value;
   return JSON.stringify(blocks);
 }
 
@@ -573,6 +576,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
 
   const addText = () => updateBlocks([...blocks, { type: "text", value: "" }]);
   const addImage = () => updateBlocks([...blocks, { type: "image", src: "", caption: "" }]);
+  const addVideo = () => updateBlocks([...blocks, { type: "video", src: "", caption: "" }]);
   const removeBlock = (i: number) => updateBlocks(blocks.filter((_, idx) => idx !== i));
   const moveUp = (i: number) => { if (i === 0) return; const b = [...blocks]; [b[i - 1], b[i]] = [b[i], b[i - 1]]; updateBlocks(b); };
   const moveDown = (i: number) => { if (i === blocks.length - 1) return; const b = [...blocks]; [b[i], b[i + 1]] = [b[i + 1], b[i]]; updateBlocks(b); };
@@ -589,6 +593,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
           <div className="flex gap-2">
             <button type="button" onClick={addText} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
             <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
+            <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
           </div>
         </div>
 
@@ -602,7 +607,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
 
               <div className="flex-1 border border-[#c9b77a]/10 p-3 flex flex-col gap-2 bg-[#131212]">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[8px] tracking-[0.2em] text-[#c9b77a]/30 uppercase">{block.type === "text" ? "Text Block" : "Image Block"}</span>
+                  <span className="text-[8px] tracking-[0.2em] text-[#c9b77a]/30 uppercase">{block.type === "text" ? "Text Block" : block.type === "image" ? "Image Block" : "Video Block"}</span>
                   <span className="flex-1" />
                   <button type="button" onClick={() => removeBlock(i)} className="text-[8px] tracking-widest text-red-400/40 hover:text-red-400/80 uppercase">Remove</button>
                 </div>
@@ -618,9 +623,16 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
                       updateBlocks(next);
                     }}
                   />
-                ) : (
+                ) : block.type === "image" ? (
                   <PoemImageBlock
                     blockIndex={i}
+                    src={block.src}
+                    caption={block.caption}
+                    onChangeSrc={src => { const next = [...blocks]; next[i] = { ...block, src }; updateBlocks(next); }}
+                    onChangeCaption={caption => { const next = [...blocks]; next[i] = { ...block, caption }; updateBlocks(next); }}
+                  />
+                ) : (
+                  <PoemVideoBlock
                     src={block.src}
                     caption={block.caption}
                     onChangeSrc={src => { const next = [...blocks]; next[i] = { ...block, src }; updateBlocks(next); }}
@@ -692,6 +704,45 @@ function PoemImageBlock({ blockIndex, src, caption, onChangeSrc, onChangeCaption
         <input className="admin-input text-xs" value={src} onChange={e => onChangeSrc(e.target.value)} placeholder="https://… or /uploads/…" />
       </div>
       <input className="admin-input text-xs" value={caption} onChange={e => onChangeCaption(e.target.value)} placeholder="Caption (optional)" />
+    </div>
+  );
+}
+
+function PoemVideoBlock({ src, caption, onChangeSrc, onChangeCaption }: {
+  src: string; caption: string;
+  onChangeSrc: (src: string) => void; onChangeCaption: (caption: string) => void;
+}) {
+  const isYouTube = /youtube\.com|youtu\.be/.test(src);
+  const isVimeo = /vimeo\.com/.test(src);
+  const isEmbed = isYouTube || isVimeo;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
+        <label className="text-[8px] tracking-[0.2em] text-[#c9b77a]/40 uppercase">Video URL</label>
+        <input
+          className="admin-input text-xs"
+          value={src}
+          onChange={e => onChangeSrc(e.target.value)}
+          placeholder="https://youtube.com/watch?v=… or https://vimeo.com/…"
+        />
+        <p className="text-[8px] text-[#c9b77a]/25 tracking-wide">
+          {isYouTube ? "▶ YouTube detected — will embed" : isVimeo ? "▶ Vimeo detected — will embed" : "Paste a YouTube, Vimeo, or direct video file URL"}
+        </p>
+      </div>
+      {src && isEmbed && (
+        <div className="relative w-full border border-[#c9b77a]/10 overflow-hidden" style={{ paddingBottom: "30%" }}>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#111010]">
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/40 uppercase">Preview visible on site</span>
+          </div>
+        </div>
+      )}
+      <input
+        className="admin-input text-xs"
+        value={caption}
+        onChange={e => onChangeCaption(e.target.value)}
+        placeholder="Caption (optional)"
+      />
     </div>
   );
 }
