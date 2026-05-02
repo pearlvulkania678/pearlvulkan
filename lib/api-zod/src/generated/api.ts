@@ -14,3 +14,176 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all tracks
+ */
+export const ListTracksResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  genre: zod.string(),
+  duration: zod.string(),
+  description: zod.string(),
+  imagePath: zod.string().nullable(),
+  hasListen: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListTracksResponse = zod.array(ListTracksResponseItem);
+
+/**
+ * @summary Create a track
+ */
+export const CreateTrackBody = zod.object({
+  title: zod.string(),
+  genre: zod.string(),
+  duration: zod.string(),
+  description: zod.string(),
+  imagePath: zod.string().nullish(),
+  hasListen: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a track
+ */
+export const UpdateTrackParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateTrackBody = zod.object({
+  title: zod.string().optional(),
+  genre: zod.string().optional(),
+  duration: zod.string().optional(),
+  description: zod.string().optional(),
+  imagePath: zod.string().nullish(),
+  hasListen: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateTrackResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  genre: zod.string(),
+  duration: zod.string(),
+  description: zod.string(),
+  imagePath: zod.string().nullable(),
+  hasListen: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a track
+ */
+export const DeleteTrackParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all poems
+ */
+export const ListPoemsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string().nullable(),
+  content: zod.string(),
+  tags: zod.array(zod.string()),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListPoemsResponse = zod.array(ListPoemsResponseItem);
+
+/**
+ * @summary Create a poem
+ */
+export const CreatePoemBody = zod.object({
+  title: zod.string().nullish(),
+  content: zod.string(),
+  tags: zod.array(zod.string()).optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a poem
+ */
+export const UpdatePoemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePoemBody = zod.object({
+  title: zod.string().nullish(),
+  content: zod.string().optional(),
+  tags: zod.array(zod.string()).optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdatePoemResponse = zod.object({
+  id: zod.number(),
+  title: zod.string().nullable(),
+  content: zod.string(),
+  tags: zod.array(zod.string()),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a poem
+ */
+export const DeletePoemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all gallery items
+ */
+export const ListGalleryResponseItem = zod.object({
+  id: zod.number(),
+  src: zod.string(),
+  caption: zod.string(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListGalleryResponse = zod.array(ListGalleryResponseItem);
+
+/**
+ * @summary Create a gallery item
+ */
+export const CreateGalleryItemBody = zod.object({
+  src: zod.string(),
+  caption: zod.string(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a gallery item
+ */
+export const UpdateGalleryItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateGalleryItemBody = zod.object({
+  src: zod.string().optional(),
+  caption: zod.string().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateGalleryItemResponse = zod.object({
+  id: zod.number(),
+  src: zod.string(),
+  caption: zod.string(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a gallery item
+ */
+export const DeleteGalleryItemParams = zod.object({
+  id: zod.coerce.number(),
+});

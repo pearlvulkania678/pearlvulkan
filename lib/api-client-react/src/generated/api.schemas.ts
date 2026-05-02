@@ -8,3 +8,87 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface Track {
+  id: number;
+  title: string;
+  genre: string;
+  duration: string;
+  description: string;
+  /** @nullable */
+  imagePath: string | null;
+  hasListen: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTrackBody {
+  title: string;
+  genre: string;
+  duration: string;
+  description: string;
+  /** @nullable */
+  imagePath?: string | null;
+  hasListen?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateTrackBody {
+  title?: string;
+  genre?: string;
+  duration?: string;
+  description?: string;
+  /** @nullable */
+  imagePath?: string | null;
+  hasListen?: boolean;
+  sortOrder?: number;
+}
+
+export interface Poem {
+  id: number;
+  /** @nullable */
+  title: string | null;
+  content: string;
+  tags: string[];
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePoemBody {
+  /** @nullable */
+  title?: string | null;
+  content: string;
+  tags?: string[];
+  sortOrder?: number;
+}
+
+export interface UpdatePoemBody {
+  /** @nullable */
+  title?: string | null;
+  content?: string;
+  tags?: string[];
+  sortOrder?: number;
+}
+
+export interface GalleryItem {
+  id: number;
+  src: string;
+  caption: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGalleryItemBody {
+  src: string;
+  caption: string;
+  sortOrder?: number;
+}
+
+export interface UpdateGalleryItemBody {
+  src?: string;
+  caption?: string;
+  sortOrder?: number;
+}

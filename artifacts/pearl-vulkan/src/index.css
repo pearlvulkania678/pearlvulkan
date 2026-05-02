@@ -307,4 +307,17 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Admin panel utilities */
+  .admin-input {
+    @apply w-full bg-transparent border border-[#c9b77a]/20 text-[#c9b77a]/80 text-xs px-3 py-2 font-sans tracking-wide focus:outline-none focus:border-[#c9b77a]/50 placeholder:text-[#c9b77a]/20;
+  }
+
+  .btn-admin {
+    @apply text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/40 text-[#c9b77a] px-4 py-2 hover:bg-[#c9b77a] hover:text-[#111010] transition-all duration-300;
+  }
+
+  .admin-action {
+    @apply text-[9px] tracking-[0.15em] uppercase text-[#c9b77a]/40 hover:text-[#c9b77a] transition-colors duration-200;
+  }
 }

@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: tracks
+    description: Music track operations
+  - name: poems
+    description: Poetry operations
+  - name: gallery
+    description: Gallery image operations
 paths:
   /healthz:
     get:
@@ -24,6 +30,229 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /tracks:
+    get:
+      operationId: listTracks
+      tags: [tracks]
+      summary: List all tracks
+      responses:
+        "200":
+          description: List of tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+    post:
+      operationId: createTrack
+      tags: [tracks]
+      summary: Create a track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrackBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+
+  /tracks/{id}:
+    patch:
+      operationId: updateTrack
+      tags: [tracks]
+      summary: Update a track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTrackBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTrack
+      tags: [tracks]
+      summary: Delete a track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /poems:
+    get:
+      operationId: listPoems
+      tags: [poems]
+      summary: List all poems
+      responses:
+        "200":
+          description: List of poems
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Poem"
+    post:
+      operationId: createPoem
+      tags: [poems]
+      summary: Create a poem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePoemBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Poem"
+
+  /poems/{id}:
+    patch:
+      operationId: updatePoem
+      tags: [poems]
+      summary: Update a poem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePoemBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Poem"
+        "404":
+          description: Not found
+    delete:
+      operationId: deletePoem
+      tags: [poems]
+      summary: Delete a poem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /gallery:
+    get:
+      operationId: listGallery
+      tags: [gallery]
+      summary: List all gallery items
+      responses:
+        "200":
+          description: List of gallery items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryItem"
+    post:
+      operationId: createGalleryItem
+      tags: [gallery]
+      summary: Create a gallery item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGalleryItemBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryItem"
+
+  /gallery/{id}:
+    patch:
+      operationId: updateGalleryItem
+      tags: [gallery]
+      summary: Update a gallery item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGalleryItemBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryItem"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteGalleryItem
+      tags: [gallery]
+      summary: Delete a gallery item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +263,182 @@ components:
       required:
         - status
 
+    Track:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        genre:
+          type: string
+        duration:
+          type: string
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        hasListen:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - genre
+        - duration
+        - description
+        - imagePath
+        - hasListen
+        - sortOrder
+        - createdAt
+        - updatedAt
+
+    CreateTrackBody:
+      type: object
+      properties:
+        title:
+          type: string
+        genre:
+          type: string
+        duration:
+          type: string
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        hasListen:
+          type: boolean
+        sortOrder:
+          type: integer
+      required:
+        - title
+        - genre
+        - duration
+        - description
+
+    UpdateTrackBody:
+      type: object
+      properties:
+        title:
+          type: string
+        genre:
+          type: string
+        duration:
+          type: string
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        hasListen:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    Poem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: ["string", "null"]
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - content
+        - tags
+        - sortOrder
+        - createdAt
+        - updatedAt
+
+    CreatePoemBody:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        sortOrder:
+          type: integer
+      required:
+        - content
+
+    UpdatePoemBody:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        sortOrder:
+          type: integer
+
+    GalleryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        src:
+          type: string
+        caption:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - src
+        - caption
+        - sortOrder
+        - createdAt
+        - updatedAt
+
+    CreateGalleryItemBody:
+      type: object
+      properties:
+        src:
+          type: string
+        caption:
+          type: string
+        sortOrder:
+          type: integer
+      required:
+        - src
+        - caption
+
+    UpdateGalleryItemBody:
+      type: object
+      properties:
+        src:
+          type: string
+        caption:
+          type: string
+        sortOrder:
+          type: integer
