@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import Start, { StartBackground } from "@/components/sections/Start";
@@ -61,29 +61,24 @@ function ScrollToTop() {
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState("start");
-  const observer = useRef<IntersectionObserver | null>(null);
   const { data: links = [] } = useSocialLinks();
 
   useEffect(() => {
-    observer.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    sections.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.current?.observe(el);
-    });
-
-    return () => {
-      observer.current?.disconnect();
+    const handleScroll = () => {
+      const trigger = window.scrollY + window.innerHeight * 0.35;
+      let current = sections[0];
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (el && el.offsetTop <= trigger) {
+          current = id;
+        }
+      }
+      setActiveSection(current);
     };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
