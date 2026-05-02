@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -406,6 +406,18 @@ type TrackFormState = { title: string; genre: string; duration: string; descript
 type PoemFormState  = { title: string; content: string; tags: string };
 type GalleryFormState = { src: string; caption: string };
 
+// ─── Poem block types ──────────────────────────────────────────────────────────
+type PoemBlock = { type: "text"; value: string } | { type: "image"; src: string; caption: string };
+function parsePoemBlocks(content: string): PoemBlock[] {
+  try { const p = JSON.parse(content); if (Array.isArray(p)) return p as PoemBlock[]; } catch {}
+  return [{ type: "text", value: content }];
+}
+function blocksToContent(blocks: PoemBlock[]): string {
+  const hasImage = blocks.some(b => b.type === "image");
+  if (!hasImage && blocks.length === 1 && blocks[0].type === "text") return blocks[0].value;
+  return JSON.stringify(blocks);
+}
+
 function SortableTrackRow({ track, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
   track: AdminTrack; isEditing: boolean;
   form: TrackFormState; onFormChange: (f: TrackFormState) => void;
@@ -552,12 +564,134 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
   form: { title: string; content: string; tags: string };
   onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
+  const [blocks, setBlocks] = useState<PoemBlock[]>(() => parsePoemBlocks(form.content));
+
+  const updateBlocks = (next: PoemBlock[]) => {
+    setBlocks(next);
+    onChange({ ...form, content: blocksToContent(next) });
+  };
+
+  const addText = () => updateBlocks([...blocks, { type: "text", value: "" }]);
+  const addImage = () => updateBlocks([...blocks, { type: "image", src: "", caption: "" }]);
+  const removeBlock = (i: number) => updateBlocks(blocks.filter((_, idx) => idx !== i));
+  const moveUp = (i: number) => { if (i === 0) return; const b = [...blocks]; [b[i - 1], b[i]] = [b[i], b[i - 1]]; updateBlocks(b); };
+  const moveDown = (i: number) => { if (i === blocks.length - 1) return; const b = [...blocks]; [b[i], b[i + 1]] = [b[i + 1], b[i]]; updateBlocks(b); };
+
   return (
-    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
-      <Field label="Title (optional)"><input data-testid="input-poem-title" className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} /></Field>
-      <Field label="Content"><textarea data-testid="input-poem-content" className="admin-input h-40 resize-none font-serif" value={form.content} onChange={e => onChange({ ...form, content: e.target.value })} /></Field>
-      <Field label="Tags (comma separated)"><input data-testid="input-poem-tags" className="admin-input" value={form.tags} onChange={e => onChange({ ...form, tags: e.target.value })} placeholder="POETRY, UKRAINIAN, VULCANSALUT" /></Field>
+    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-5 bg-[#161515]">
+      <Field label="Title (optional)">
+        <input data-testid="input-poem-title" className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} />
+      </Field>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Content Blocks</label>
+          <div className="flex gap-2">
+            <button type="button" onClick={addText} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
+            <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {blocks.map((block, i) => (
+            <div key={i} className="flex gap-2 items-start">
+              <div className="flex flex-col gap-1 shrink-0 pt-1">
+                <button type="button" onClick={() => moveUp(i)} disabled={i === 0} className="text-[#c9b77a]/25 hover:text-[#c9b77a]/60 disabled:opacity-10 text-[10px] leading-none">▲</button>
+                <button type="button" onClick={() => moveDown(i)} disabled={i === blocks.length - 1} className="text-[#c9b77a]/25 hover:text-[#c9b77a]/60 disabled:opacity-10 text-[10px] leading-none">▼</button>
+              </div>
+
+              <div className="flex-1 border border-[#c9b77a]/10 p-3 flex flex-col gap-2 bg-[#131212]">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[8px] tracking-[0.2em] text-[#c9b77a]/30 uppercase">{block.type === "text" ? "Text Block" : "Image Block"}</span>
+                  <span className="flex-1" />
+                  <button type="button" onClick={() => removeBlock(i)} className="text-[8px] tracking-widest text-red-400/40 hover:text-red-400/80 uppercase">Remove</button>
+                </div>
+
+                {block.type === "text" ? (
+                  <textarea
+                    className="admin-input h-28 resize-y font-serif text-sm"
+                    value={block.value}
+                    placeholder="Poem lines…"
+                    onChange={e => {
+                      const next = [...blocks];
+                      next[i] = { type: "text", value: e.target.value };
+                      updateBlocks(next);
+                    }}
+                  />
+                ) : (
+                  <PoemImageBlock
+                    blockIndex={i}
+                    src={block.src}
+                    caption={block.caption}
+                    onChangeSrc={src => { const next = [...blocks]; next[i] = { ...block, src }; updateBlocks(next); }}
+                    onChangeCaption={caption => { const next = [...blocks]; next[i] = { ...block, caption }; updateBlocks(next); }}
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Field label="Tags (comma separated)">
+        <input data-testid="input-poem-tags" className="admin-input" value={form.tags} onChange={e => onChange({ ...form, tags: e.target.value })} placeholder="POETRY, UKRAINIAN, VULCANSALUT" />
+      </Field>
       <FormActions onSave={onSave} onCancel={onCancel} saving={saving} label={label} />
+    </div>
+  );
+}
+
+function PoemImageBlock({ blockIndex, src, caption, onChangeSrc, onChangeCaption }: {
+  blockIndex: number; src: string; caption: string;
+  onChangeSrc: (src: string) => void; onChangeCaption: (caption: string) => void;
+}) {
+  const uid = useId();
+  const inputId = `poem-img-${uid}-${blockIndex}`;
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const BASE = import.meta.env.BASE_URL;
+
+  const upload = async (file: File) => {
+    setUploading(true); setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
+      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
+      const { url } = await res.json() as { url: string };
+      onChangeSrc(url);
+    } catch { setError("Upload failed"); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) upload(f); }}
+        onClick={() => document.getElementById(inputId)?.click()}
+        className={`relative border-2 border-dashed cursor-pointer flex items-center justify-center transition-colors duration-300 ${
+          dragging ? "border-[#c9b77a]/60 bg-[#c9b77a]/5" : "border-[#c9b77a]/20 hover:border-[#c9b77a]/40"
+        } ${src ? "h-32" : "h-20"}`}
+      >
+        {src && <img src={src} alt="preview" className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale" />}
+        <div className="relative z-10 text-center pointer-events-none">
+          {uploading ? (
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/60 uppercase">Uploading…</span>
+          ) : (
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/40 uppercase">{src ? "Click or drop to replace" : "Drop image or click to browse"}</span>
+          )}
+        </div>
+        <input id={inputId} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} />
+      </div>
+      {error && <p className="text-[9px] text-red-400/70">{error}</p>}
+      <div className="flex gap-2 items-center">
+        <span className="text-[8px] text-[#c9b77a]/30 uppercase tracking-widest shrink-0">Or URL</span>
+        <input className="admin-input text-xs" value={src} onChange={e => onChangeSrc(e.target.value)} placeholder="https://… or /uploads/…" />
+      </div>
+      <input className="admin-input text-xs" value={caption} onChange={e => onChangeCaption(e.target.value)} placeholder="Caption (optional)" />
     </div>
   );
 }
