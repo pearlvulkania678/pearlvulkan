@@ -253,7 +253,7 @@ function SoundCloudArtwork({ url, title }: { url: string; title: string }) {
     <img
       src={thumbnailUrl}
       alt={title}
-      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700 mix-blend-luminosity grayscale group-hover:grayscale-0 group-hover:mix-blend-normal"
+      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
     />
   );
 }

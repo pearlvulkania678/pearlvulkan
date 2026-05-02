@@ -617,13 +617,52 @@ function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
   form: { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; soundcloudUrl: string; hasListen: boolean };
   onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
+  const [importingArt, setImportingArt] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const importSCArtwork = async () => {
+    if (!form.soundcloudUrl) return;
+    setImportingArt(true);
+    setImportError(null);
+    try {
+      const res = await fetch(`https://soundcloud.com/oembed?url=${encodeURIComponent(form.soundcloudUrl)}&format=json`);
+      if (!res.ok) throw new Error("SoundCloud did not respond");
+      const data = await res.json() as { thumbnail_url?: string };
+      if (!data.thumbnail_url) throw new Error("No artwork found");
+      onChange({ ...form, imagePath: data.thumbnail_url });
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setImportingArt(false);
+    }
+  };
+
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Title"><input data-testid="input-title" className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} /></Field>
         <Field label="Genre"><input data-testid="input-genre" className="admin-input" value={form.genre} onChange={e => onChange({ ...form, genre: e.target.value })} placeholder="AMBIENT / DRONE" /></Field>
         <Field label="Duration"><input data-testid="input-duration" className="admin-input" value={form.duration} onChange={e => onChange({ ...form, duration: e.target.value })} placeholder="3:24" /></Field>
-        <Field label="Cover Image Path"><input data-testid="input-image" className="admin-input" value={form.imagePath} onChange={e => onChange({ ...form, imagePath: e.target.value })} placeholder="/images/listen-1.png" /></Field>
+        <Field label="Cover Image Path">
+          <div className="flex gap-2 items-center">
+            <input data-testid="input-image" className="admin-input flex-1" value={form.imagePath} onChange={e => onChange({ ...form, imagePath: e.target.value })} placeholder="/images/listen-1.png" />
+            {form.soundcloudUrl && (
+              <button
+                type="button"
+                onClick={importSCArtwork}
+                disabled={importingArt}
+                title="Import artwork from SoundCloud"
+                className="shrink-0 px-3 py-1 text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/30 text-[#c9b77a]/60 hover:text-[#c9b77a] hover:border-[#c9b77a]/60 transition-colors duration-300 disabled:opacity-40"
+              >
+                {importingArt ? "…" : "☁ Import"}
+              </button>
+            )}
+          </div>
+          {importError && <p className="text-[8px] text-red-400/60 tracking-wide mt-1">{importError}</p>}
+          {form.imagePath?.startsWith("https://i1.sndcdn.com") || form.imagePath?.startsWith("https://i2.sndcdn.com") || form.imagePath?.startsWith("https://i3.sndcdn.com") ? (
+            <p className="text-[8px] text-[#c9b77a]/30 tracking-wide mt-1">Using SoundCloud artwork URL — save to persist.</p>
+          ) : null}
+        </Field>
       </div>
       <Field label="Description"><textarea data-testid="input-description" className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
       <AudioUploadField value={form.audioPath} onChange={audioPath => onChange({ ...form, audioPath })} />
