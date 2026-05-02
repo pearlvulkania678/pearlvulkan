@@ -87,6 +87,42 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function useBuildInfo() {
+  return useQuery<{ status: string; startedAt: string }>({
+    queryKey: ["healthz"],
+    queryFn: () => fetch(`${BASE}api/healthz`).then(r => r.json()),
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+  });
+}
+
+function BuildBanner() {
+  const { data, isFetching, isError } = useBuildInfo();
+
+  const label = (() => {
+    if (isError) return { text: "server unreachable", color: "text-red-400/60" };
+    if (!data) return { text: "checking server…", color: "text-[#c9b77a]/20" };
+    const d = new Date(data.startedAt);
+    const now = new Date();
+    const secs = Math.floor((now.getTime() - d.getTime()) / 1000);
+    const age =
+      secs < 60 ? `${secs}s ago` :
+      secs < 3600 ? `${Math.floor(secs / 60)}m ago` :
+      `${Math.floor(secs / 3600)}h ago`;
+    const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    return { text: `server built ${timeStr} · ${age}`, color: "text-[#c9b77a]/30" };
+  })();
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isError ? "bg-red-400/60" : "bg-[#c9b77a]/40"} ${isFetching ? "animate-pulse" : ""}`} />
+      <span className={`font-sans text-[8px] tracking-[0.2em] uppercase ${label.color}`}>
+        {label.text}
+      </span>
+    </div>
+  );
+}
+
 function AdminPanel() {
   const [tab, setTab] = useState<Tab>("tracks");
   return (
@@ -108,6 +144,9 @@ function AdminPanel() {
           <button onClick={() => { sessionStorage.removeItem(SESSION_KEY); window.location.reload(); }} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors">Sign out</button>
         </div>
       </header>
+      <div className="border-b border-[#c9b77a]/10 px-8 py-2">
+        <BuildBanner />
+      </div>
       <main className="px-8 py-10 max-w-4xl mx-auto">
         {tab === "tracks"  && <TracksPanel />}
         {tab === "poems"   && <PoemsPanel />}
