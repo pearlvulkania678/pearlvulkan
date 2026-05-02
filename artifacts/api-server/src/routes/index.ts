@@ -3,10 +3,12 @@ import healthRouter from "./health";
 import tracksRouter from "./tracks";
 import poemsRouter from "./poems";
 import galleryRouter from "./gallery";
+import adminAuthRouter from "./admin-auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(adminAuthRouter);
 router.use(tracksRouter);
 router.use(poemsRouter);
 router.use(galleryRouter);

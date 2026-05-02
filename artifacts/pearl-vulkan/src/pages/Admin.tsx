@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListTracks,
@@ -18,10 +18,86 @@ import {
   getListGalleryQueryKey,
 } from "@workspace/api-client-react";
 
+const SESSION_KEY = "pv_admin_auth";
+
 type Tab = "tracks" | "poems" | "gallery";
 
 export default function Admin() {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(SESSION_KEY) === "1");
+
+  if (!authed) return <LoginGate onSuccess={() => { sessionStorage.setItem(SESSION_KEY, "1"); setAuthed(true); }} />;
+  return <AdminPanel />;
+}
+
+function LoginGate({ onSuccess }: { onSuccess: () => void }) {
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/admin/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw }),
+      });
+      if (res.ok) {
+        onSuccess();
+      } else {
+        setError("Wrong passphrase.");
+        setPw("");
+      }
+    } catch {
+      setError("Could not reach server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#111010] flex items-center justify-center">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-72">
+        <div>
+          <p className="font-sans text-[9px] tracking-[0.3em] text-[#c9b77a]/40 uppercase mb-2">Pearl Vulkan</p>
+          <h1 className="font-serif text-2xl text-[#c9b77a] tracking-widest uppercase">Admin</h1>
+        </div>
+        <div className="w-full h-px bg-[#c9b77a]/15" />
+        <div className="flex flex-col gap-2">
+          <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/40 uppercase">Passphrase</label>
+          <input
+            data-testid="admin-password-input"
+            type="password"
+            autoFocus
+            value={pw}
+            onChange={e => setPw(e.target.value)}
+            className="admin-input"
+            placeholder="••••••••••••"
+          />
+          {error && <p className="text-[9px] tracking-wider text-red-400/70">{error}</p>}
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !pw}
+          data-testid="admin-login-btn"
+          className="btn-admin disabled:opacity-30 text-center"
+        >
+          {loading ? "Checking..." : "Enter"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function AdminPanel() {
   const [tab, setTab] = useState<Tab>("tracks");
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-[#111010] text-[#c9b77a] font-sans">
@@ -32,21 +108,29 @@ export default function Admin() {
           </a>
           <h1 className="font-serif text-2xl tracking-widest uppercase mt-1">Admin</h1>
         </div>
-        <div className="flex gap-6">
-          {(["tracks", "poems", "gallery"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              data-testid={`tab-${t}`}
-              onClick={() => setTab(t)}
-              className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${
-                tab === t
-                  ? "text-[#c9b77a] border-b border-[#c9b77a]"
-                  : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="flex items-center gap-8">
+          <div className="flex gap-6">
+            {(["tracks", "poems", "gallery"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                data-testid={`tab-${t}`}
+                onClick={() => setTab(t)}
+                className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${
+                  tab === t
+                    ? "text-[#c9b77a] border-b border-[#c9b77a]"
+                    : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleLogout}
+            className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
