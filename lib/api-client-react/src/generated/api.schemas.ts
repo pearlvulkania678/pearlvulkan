@@ -113,3 +113,93 @@ export interface UpdateGalleryItemBody {
   published?: boolean;
   sortOrder?: number;
 }
+
+export interface TouchItem {
+  id: number;
+  title: string;
+  /** @nullable */
+  subtitle: string | null;
+  description: string;
+  /** @nullable */
+  imagePath: string | null;
+  /** @nullable */
+  linkUrl: string | null;
+  published: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTouchItemBody {
+  title: string;
+  /** @nullable */
+  subtitle?: string | null;
+  description: string;
+  /** @nullable */
+  imagePath?: string | null;
+  /** @nullable */
+  linkUrl?: string | null;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateTouchItemBody {
+  title?: string;
+  /** @nullable */
+  subtitle?: string | null;
+  description?: string;
+  /** @nullable */
+  imagePath?: string | null;
+  /** @nullable */
+  linkUrl?: string | null;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export interface SenseItem {
+  id: number;
+  title: string;
+  /** @nullable */
+  date: string | null;
+  /** @nullable */
+  location: string | null;
+  description: string;
+  /** @nullable */
+  imagePath: string | null;
+  /** @nullable */
+  linkUrl: string | null;
+  published: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSenseItemBody {
+  title: string;
+  /** @nullable */
+  date?: string | null;
+  /** @nullable */
+  location?: string | null;
+  description: string;
+  /** @nullable */
+  imagePath?: string | null;
+  /** @nullable */
+  linkUrl?: string | null;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateSenseItemBody {
+  title?: string;
+  /** @nullable */
+  date?: string | null;
+  /** @nullable */
+  location?: string | null;
+  description?: string;
+  /** @nullable */
+  imagePath?: string | null;
+  /** @nullable */
+  linkUrl?: string | null;
+  published?: boolean;
+  sortOrder?: number;
+}

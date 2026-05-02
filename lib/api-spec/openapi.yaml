@@ -16,6 +16,10 @@ tags:
     description: Poetry operations
   - name: gallery
     description: Gallery image operations
+  - name: touch
+    description: Touch section items
+  - name: sense
+    description: Sense section items
 paths:
   /healthz:
     get:
@@ -210,6 +214,154 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GalleryItem"
+
+  /touch:
+    get:
+      operationId: listTouchItems
+      tags: [touch]
+      summary: List all touch items
+      responses:
+        "200":
+          description: List of touch items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TouchItem"
+    post:
+      operationId: createTouchItem
+      tags: [touch]
+      summary: Create a touch item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTouchItemBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TouchItem"
+
+  /touch/{id}:
+    patch:
+      operationId: updateTouchItem
+      tags: [touch]
+      summary: Update a touch item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTouchItemBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TouchItem"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTouchItem
+      tags: [touch]
+      summary: Delete a touch item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /sense:
+    get:
+      operationId: listSenseItems
+      tags: [sense]
+      summary: List all sense items
+      responses:
+        "200":
+          description: List of sense items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SenseItem"
+    post:
+      operationId: createSenseItem
+      tags: [sense]
+      summary: Create a sense item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSenseItemBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenseItem"
+
+  /sense/{id}:
+    patch:
+      operationId: updateSenseItem
+      tags: [sense]
+      summary: Update a sense item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSenseItemBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SenseItem"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteSenseItem
+      tags: [sense]
+      summary: Delete a sense item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /gallery/{id}:
     patch:
@@ -473,6 +625,161 @@ components:
           type: string
         caption:
           type: string
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    TouchItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subtitle:
+          type: ["string", "null"]
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - subtitle
+        - description
+        - imagePath
+        - linkUrl
+        - published
+        - sortOrder
+        - createdAt
+        - updatedAt
+
+    CreateTouchItemBody:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: ["string", "null"]
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+      required:
+        - title
+        - description
+
+    UpdateTouchItemBody:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: ["string", "null"]
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    SenseItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        date:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - date
+        - location
+        - description
+        - imagePath
+        - linkUrl
+        - published
+        - sortOrder
+        - createdAt
+        - updatedAt
+
+    CreateSenseItemBody:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+      required:
+        - title
+        - description
+
+    UpdateSenseItemBody:
+      type: object
+      properties:
+        title:
+          type: string
+        date:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        description:
+          type: string
+        imagePath:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
         published:
           type: boolean
         sortOrder:

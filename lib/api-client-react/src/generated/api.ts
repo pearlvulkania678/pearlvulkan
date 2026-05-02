@@ -19,13 +19,19 @@ import type {
 import type {
   CreateGalleryItemBody,
   CreatePoemBody,
+  CreateSenseItemBody,
+  CreateTouchItemBody,
   CreateTrackBody,
   GalleryItem,
   HealthStatus,
   Poem,
+  SenseItem,
+  TouchItem,
   Track,
   UpdateGalleryItemBody,
   UpdatePoemBody,
+  UpdateSenseItemBody,
+  UpdateTouchItemBody,
   UpdateTrackBody,
 } from "./api.schemas";
 
@@ -925,6 +931,670 @@ export const useCreateGalleryItem = <
   TContext
 > => {
   return useMutation(getCreateGalleryItemMutationOptions(options));
+};
+
+/**
+ * @summary List all touch items
+ */
+export const getListTouchItemsUrl = () => {
+  return `/api/touch`;
+};
+
+export const listTouchItems = async (
+  options?: RequestInit,
+): Promise<TouchItem[]> => {
+  return customFetch<TouchItem[]>(getListTouchItemsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTouchItemsQueryKey = () => {
+  return [`/api/touch`] as const;
+};
+
+export const getListTouchItemsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTouchItems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTouchItems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTouchItemsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listTouchItems>>> = ({
+    signal,
+  }) => listTouchItems({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTouchItems>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTouchItemsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTouchItems>>
+>;
+export type ListTouchItemsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all touch items
+ */
+
+export function useListTouchItems<
+  TData = Awaited<ReturnType<typeof listTouchItems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTouchItems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTouchItemsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a touch item
+ */
+export const getCreateTouchItemUrl = () => {
+  return `/api/touch`;
+};
+
+export const createTouchItem = async (
+  createTouchItemBody: CreateTouchItemBody,
+  options?: RequestInit,
+): Promise<TouchItem> => {
+  return customFetch<TouchItem>(getCreateTouchItemUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTouchItemBody),
+  });
+};
+
+export const getCreateTouchItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTouchItem>>,
+    TError,
+    { data: BodyType<CreateTouchItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createTouchItem>>,
+  TError,
+  { data: BodyType<CreateTouchItemBody> },
+  TContext
+> => {
+  const mutationKey = ["createTouchItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createTouchItem>>,
+    { data: BodyType<CreateTouchItemBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createTouchItem(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateTouchItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createTouchItem>>
+>;
+export type CreateTouchItemMutationBody = BodyType<CreateTouchItemBody>;
+export type CreateTouchItemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a touch item
+ */
+export const useCreateTouchItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTouchItem>>,
+    TError,
+    { data: BodyType<CreateTouchItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createTouchItem>>,
+  TError,
+  { data: BodyType<CreateTouchItemBody> },
+  TContext
+> => {
+  return useMutation(getCreateTouchItemMutationOptions(options));
+};
+
+/**
+ * @summary Update a touch item
+ */
+export const getUpdateTouchItemUrl = (id: number) => {
+  return `/api/touch/${id}`;
+};
+
+export const updateTouchItem = async (
+  id: number,
+  updateTouchItemBody: UpdateTouchItemBody,
+  options?: RequestInit,
+): Promise<TouchItem> => {
+  return customFetch<TouchItem>(getUpdateTouchItemUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateTouchItemBody),
+  });
+};
+
+export const getUpdateTouchItemMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTouchItem>>,
+    TError,
+    { id: number; data: BodyType<UpdateTouchItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTouchItem>>,
+  TError,
+  { id: number; data: BodyType<UpdateTouchItemBody> },
+  TContext
+> => {
+  const mutationKey = ["updateTouchItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTouchItem>>,
+    { id: number; data: BodyType<UpdateTouchItemBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateTouchItem(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTouchItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTouchItem>>
+>;
+export type UpdateTouchItemMutationBody = BodyType<UpdateTouchItemBody>;
+export type UpdateTouchItemMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a touch item
+ */
+export const useUpdateTouchItem = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTouchItem>>,
+    TError,
+    { id: number; data: BodyType<UpdateTouchItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTouchItem>>,
+  TError,
+  { id: number; data: BodyType<UpdateTouchItemBody> },
+  TContext
+> => {
+  return useMutation(getUpdateTouchItemMutationOptions(options));
+};
+
+/**
+ * @summary Delete a touch item
+ */
+export const getDeleteTouchItemUrl = (id: number) => {
+  return `/api/touch/${id}`;
+};
+
+export const deleteTouchItem = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTouchItemUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTouchItemMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTouchItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTouchItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteTouchItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTouchItem>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteTouchItem(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTouchItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTouchItem>>
+>;
+
+export type DeleteTouchItemMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a touch item
+ */
+export const useDeleteTouchItem = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTouchItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTouchItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteTouchItemMutationOptions(options));
+};
+
+/**
+ * @summary List all sense items
+ */
+export const getListSenseItemsUrl = () => {
+  return `/api/sense`;
+};
+
+export const listSenseItems = async (
+  options?: RequestInit,
+): Promise<SenseItem[]> => {
+  return customFetch<SenseItem[]>(getListSenseItemsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSenseItemsQueryKey = () => {
+  return [`/api/sense`] as const;
+};
+
+export const getListSenseItemsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSenseItems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSenseItems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSenseItemsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSenseItems>>> = ({
+    signal,
+  }) => listSenseItems({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSenseItems>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSenseItemsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSenseItems>>
+>;
+export type ListSenseItemsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all sense items
+ */
+
+export function useListSenseItems<
+  TData = Awaited<ReturnType<typeof listSenseItems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSenseItems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSenseItemsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a sense item
+ */
+export const getCreateSenseItemUrl = () => {
+  return `/api/sense`;
+};
+
+export const createSenseItem = async (
+  createSenseItemBody: CreateSenseItemBody,
+  options?: RequestInit,
+): Promise<SenseItem> => {
+  return customFetch<SenseItem>(getCreateSenseItemUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSenseItemBody),
+  });
+};
+
+export const getCreateSenseItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSenseItem>>,
+    TError,
+    { data: BodyType<CreateSenseItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSenseItem>>,
+  TError,
+  { data: BodyType<CreateSenseItemBody> },
+  TContext
+> => {
+  const mutationKey = ["createSenseItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSenseItem>>,
+    { data: BodyType<CreateSenseItemBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSenseItem(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSenseItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSenseItem>>
+>;
+export type CreateSenseItemMutationBody = BodyType<CreateSenseItemBody>;
+export type CreateSenseItemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a sense item
+ */
+export const useCreateSenseItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSenseItem>>,
+    TError,
+    { data: BodyType<CreateSenseItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSenseItem>>,
+  TError,
+  { data: BodyType<CreateSenseItemBody> },
+  TContext
+> => {
+  return useMutation(getCreateSenseItemMutationOptions(options));
+};
+
+/**
+ * @summary Update a sense item
+ */
+export const getUpdateSenseItemUrl = (id: number) => {
+  return `/api/sense/${id}`;
+};
+
+export const updateSenseItem = async (
+  id: number,
+  updateSenseItemBody: UpdateSenseItemBody,
+  options?: RequestInit,
+): Promise<SenseItem> => {
+  return customFetch<SenseItem>(getUpdateSenseItemUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateSenseItemBody),
+  });
+};
+
+export const getUpdateSenseItemMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSenseItem>>,
+    TError,
+    { id: number; data: BodyType<UpdateSenseItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateSenseItem>>,
+  TError,
+  { id: number; data: BodyType<UpdateSenseItemBody> },
+  TContext
+> => {
+  const mutationKey = ["updateSenseItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateSenseItem>>,
+    { id: number; data: BodyType<UpdateSenseItemBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateSenseItem(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateSenseItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateSenseItem>>
+>;
+export type UpdateSenseItemMutationBody = BodyType<UpdateSenseItemBody>;
+export type UpdateSenseItemMutationError = ErrorType<void>;
+
+/**
+ * @summary Update a sense item
+ */
+export const useUpdateSenseItem = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSenseItem>>,
+    TError,
+    { id: number; data: BodyType<UpdateSenseItemBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateSenseItem>>,
+  TError,
+  { id: number; data: BodyType<UpdateSenseItemBody> },
+  TContext
+> => {
+  return useMutation(getUpdateSenseItemMutationOptions(options));
+};
+
+/**
+ * @summary Delete a sense item
+ */
+export const getDeleteSenseItemUrl = (id: number) => {
+  return `/api/sense/${id}`;
+};
+
+export const deleteSenseItem = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteSenseItemUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSenseItemMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSenseItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSenseItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSenseItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSenseItem>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSenseItem(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSenseItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSenseItem>>
+>;
+
+export type DeleteSenseItemMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a sense item
+ */
+export const useDeleteSenseItem = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSenseItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSenseItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSenseItemMutationOptions(options));
 };
 
 /**

@@ -178,6 +178,144 @@ export const CreateGalleryItemBody = zod.object({
 });
 
 /**
+ * @summary List all touch items
+ */
+export const ListTouchItemsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  subtitle: zod.string().nullable(),
+  description: zod.string(),
+  imagePath: zod.string().nullable(),
+  linkUrl: zod.string().nullable(),
+  published: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListTouchItemsResponse = zod.array(ListTouchItemsResponseItem);
+
+/**
+ * @summary Create a touch item
+ */
+export const CreateTouchItemBody = zod.object({
+  title: zod.string(),
+  subtitle: zod.string().nullish(),
+  description: zod.string(),
+  imagePath: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  published: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a touch item
+ */
+export const UpdateTouchItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateTouchItemBody = zod.object({
+  title: zod.string().optional(),
+  subtitle: zod.string().nullish(),
+  description: zod.string().optional(),
+  imagePath: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  published: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateTouchItemResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  subtitle: zod.string().nullable(),
+  description: zod.string(),
+  imagePath: zod.string().nullable(),
+  linkUrl: zod.string().nullable(),
+  published: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a touch item
+ */
+export const DeleteTouchItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List all sense items
+ */
+export const ListSenseItemsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  date: zod.string().nullable(),
+  location: zod.string().nullable(),
+  description: zod.string(),
+  imagePath: zod.string().nullable(),
+  linkUrl: zod.string().nullable(),
+  published: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListSenseItemsResponse = zod.array(ListSenseItemsResponseItem);
+
+/**
+ * @summary Create a sense item
+ */
+export const CreateSenseItemBody = zod.object({
+  title: zod.string(),
+  date: zod.string().nullish(),
+  location: zod.string().nullish(),
+  description: zod.string(),
+  imagePath: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  published: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a sense item
+ */
+export const UpdateSenseItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSenseItemBody = zod.object({
+  title: zod.string().optional(),
+  date: zod.string().nullish(),
+  location: zod.string().nullish(),
+  description: zod.string().optional(),
+  imagePath: zod.string().nullish(),
+  linkUrl: zod.string().nullish(),
+  published: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateSenseItemResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  date: zod.string().nullable(),
+  location: zod.string().nullable(),
+  description: zod.string(),
+  imagePath: zod.string().nullable(),
+  linkUrl: zod.string().nullable(),
+  published: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a sense item
+ */
+export const DeleteSenseItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Update a gallery item
  */
 export const UpdateGalleryItemParams = zod.object({

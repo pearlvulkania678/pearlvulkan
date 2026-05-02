@@ -27,15 +27,23 @@ import {
   useCreateGalleryItem,
 } from "@workspace/api-client-react";
 
+const fetchAdminTouch = () => fetch(`${BASE}api/admin/touch`).then(r => r.json()) as Promise<AdminTouch[]>;
+const fetchAdminSense = () => fetch(`${BASE}api/admin/sense`).then(r => r.json()) as Promise<AdminSense[]>;
+
+const adminTouchKey = ["admin", "touch"] as const;
+const adminSenseKey = ["admin", "sense"] as const;
+
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
-type Tab = "tracks" | "poems" | "gallery" | "log";
+type Tab = "tracks" | "poems" | "gallery" | "touch" | "sense" | "log";
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
-interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
-interface AdminPoem  { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
+interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
+interface AdminPoem    { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
 interface AdminGallery { id: number; src: string; caption: string; published: boolean; sortOrder: number; }
+interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string; imagePath: string | null; linkUrl: string | null; published: boolean; sortOrder: number; }
+interface AdminSense   { id: number; title: string; date: string | null; location: string | null; description: string; imagePath: string | null; linkUrl: string | null; published: boolean; sortOrder: number; }
 
 // ─── Admin-specific fetchers (see all, incl. drafts) ────────────────────────
 const fetchAdminTracks  = () => fetch(`${BASE}api/admin/tracks`).then(r => r.json()) as Promise<AdminTrack[]>;
@@ -133,8 +141,8 @@ function AdminPanel() {
           <h1 className="font-serif text-2xl tracking-widest uppercase mt-1">Admin</h1>
         </div>
         <div className="flex items-center gap-8">
-          <div className="flex gap-6">
-            {(["tracks", "poems", "gallery", "log"] as Tab[]).map(t => (
+          <div className="flex gap-6 flex-wrap">
+            {(["tracks", "poems", "gallery", "touch", "sense", "log"] as Tab[]).map(t => (
               <button key={t} data-testid={`tab-${t}`} onClick={() => setTab(t)}
                 className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${tab === t ? "text-[#c9b77a] border-b border-[#c9b77a]" : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"}`}>
                 {t}
@@ -151,6 +159,8 @@ function AdminPanel() {
         {tab === "tracks"  && <TracksPanel />}
         {tab === "poems"   && <PoemsPanel />}
         {tab === "gallery" && <GalleryPanel />}
+        {tab === "touch"   && <TouchPanel />}
+        {tab === "sense"   && <SensePanel />}
         {tab === "log"     && <ActivityPanel />}
       </main>
     </div>
@@ -639,31 +649,25 @@ function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
 
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Field label="Title"><input data-testid="input-title" className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} /></Field>
         <Field label="Genre"><input data-testid="input-genre" className="admin-input" value={form.genre} onChange={e => onChange({ ...form, genre: e.target.value })} placeholder="AMBIENT / DRONE" /></Field>
         <Field label="Duration"><input data-testid="input-duration" className="admin-input" value={form.duration} onChange={e => onChange({ ...form, duration: e.target.value })} placeholder="3:24" /></Field>
-        <Field label="Cover Image Path">
-          <div className="flex gap-2 items-center">
-            <input data-testid="input-image" className="admin-input flex-1" value={form.imagePath} onChange={e => onChange({ ...form, imagePath: e.target.value })} placeholder="/images/listen-1.png" />
-            {form.soundcloudUrl && (
-              <button
-                type="button"
-                onClick={importSCArtwork}
-                disabled={importingArt}
-                title="Import artwork from SoundCloud"
-                className="shrink-0 px-3 py-1 text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/30 text-[#c9b77a]/60 hover:text-[#c9b77a] hover:border-[#c9b77a]/60 transition-colors duration-300 disabled:opacity-40"
-              >
-                {importingArt ? "…" : "☁ Import"}
-              </button>
-            )}
-          </div>
-          {importError && <p className="text-[8px] text-red-400/60 tracking-wide mt-1">{importError}</p>}
-          {form.imagePath?.startsWith("https://i1.sndcdn.com") || form.imagePath?.startsWith("https://i2.sndcdn.com") || form.imagePath?.startsWith("https://i3.sndcdn.com") ? (
-            <p className="text-[8px] text-[#c9b77a]/30 tracking-wide mt-1">Using SoundCloud artwork URL — save to persist.</p>
-          ) : null}
-        </Field>
       </div>
+      <ImageUploadField inputId="track-image-input" value={form.imagePath} onChange={imagePath => onChange({ ...form, imagePath })} />
+      {form.soundcloudUrl && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={importSCArtwork}
+            disabled={importingArt}
+            className="text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/30 text-[#c9b77a]/60 hover:text-[#c9b77a] hover:border-[#c9b77a]/60 transition-colors duration-300 px-3 py-1 disabled:opacity-40"
+          >
+            {importingArt ? "…" : "☁ Import from SoundCloud"}
+          </button>
+          {importError && <p className="text-[8px] text-red-400/60 tracking-wide">{importError}</p>}
+        </div>
+      )}
       <Field label="Description"><textarea data-testid="input-description" className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
       <AudioUploadField value={form.audioPath} onChange={audioPath => onChange({ ...form, audioPath })} />
       <div className="flex flex-col gap-1">
@@ -959,7 +963,7 @@ function GalleryForm({ form, onChange, onSave, onCancel, saving, label }: {
   );
 }
 
-function ImageUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+function ImageUploadField({ value, onChange, inputId = "gallery-file-input" }: { value: string; onChange: (url: string) => void; inputId?: string }) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -998,7 +1002,7 @@ function ImageUploadField({ value, onChange }: { value: string; onChange: (url: 
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        onClick={() => document.getElementById("gallery-file-input")?.click()}
+        onClick={() => document.getElementById(inputId)?.click()}
         className={`relative border-2 border-dashed transition-colors duration-300 cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden ${
           dragging ? "border-[#c9b77a]/60 bg-[#c9b77a]/5" : "border-[#c9b77a]/20 hover:border-[#c9b77a]/40"
         } ${value ? "h-40" : "h-28"}`}
@@ -1023,13 +1027,13 @@ function ImageUploadField({ value, onChange }: { value: string; onChange: (url: 
           )}
         </div>
         <input
-          id="gallery-file-input"
+          id={inputId}
           ref={el => { inputRef[1](el); }}
           type="file"
           accept="image/*"
           className="hidden"
           onChange={handleFile}
-          data-testid="gallery-file-input"
+          data-testid={inputId}
         />
       </div>
 
@@ -1166,6 +1170,8 @@ const ENTITY_LABELS: Record<string, string> = {
   track: "Track",
   poem: "Poem",
   gallery: "Image",
+  touch: "Touch",
+  sense: "Sense",
 };
 
 function ActivityPanel() {
@@ -1244,6 +1250,265 @@ function ActivityPanel() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── TOUCH Panel ─────────────────────────────────────────────────────────────
+
+function TouchPanel() {
+  const qc = useQueryClient();
+  const { data: items = [], isLoading } = useQuery<AdminTouch[]>({ queryKey: adminTouchKey, queryFn: fetchAdminTouch });
+  const [editing, setEditing] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<Omit<AdminTouch, "id" | "sortOrder">>({ title: "", subtitle: null, description: "", imagePath: null, linkUrl: null, published: false });
+  const [saving, setSaving] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const ids = items.map(i => String(i.id));
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: adminTouchKey });
+
+  const resetForm = () => { setForm({ title: "", subtitle: null, description: "", imagePath: null, linkUrl: null, published: false }); setAdding(false); setEditing(null); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const body = { ...form, subtitle: form.subtitle || null, imagePath: form.imagePath || null, linkUrl: form.linkUrl || null };
+      if (editing != null) {
+        await fetch(`${BASE}api/admin/touch/${editing}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      } else {
+        await fetch(`${BASE}api/admin/touch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      }
+      await invalidate();
+      resetForm();
+    } finally { setSaving(false); }
+  };
+
+  const del = async (id: number) => {
+    if (!confirm("Delete this touch item?")) return;
+    await fetch(`${BASE}api/admin/touch/${id}`, { method: "DELETE" });
+    await invalidate();
+  };
+
+  const togglePublish = async (item: AdminTouch) => {
+    await fetch(`${BASE}api/admin/touch/${item.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) });
+    await invalidate();
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = items.findIndex(i => String(i.id) === active.id);
+    const newIdx = items.findIndex(i => String(i.id) === over.id);
+    const reordered = arrayMove(items, oldIdx, newIdx);
+    qc.setQueryData(adminTouchKey, reordered);
+    await fetch(`${BASE}api/admin/touch/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
+    await invalidate();
+  };
+
+  const startEdit = (item: AdminTouch) => { setForm({ title: item.title, subtitle: item.subtitle, description: item.description, imagePath: item.imagePath, linkUrl: item.linkUrl, published: item.published }); setEditing(item.id); setAdding(false); };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-lg tracking-widest uppercase text-[#c9b77a]/70">Touch</h2>
+        {!adding && editing == null && (
+          <button onClick={() => { setAdding(true); setEditing(null); }} className="text-[9px] tracking-[0.25em] uppercase border border-[#c9b77a]/30 text-[#c9b77a]/60 hover:text-[#c9b77a] hover:border-[#c9b77a]/60 px-4 py-2 transition-colors duration-300">+ Add Item</button>
+        )}
+      </div>
+
+      {(adding || editing != null) && (
+        <TouchForm form={form} onChange={setForm} onSave={save} onCancel={resetForm} saving={saving} isEdit={editing != null} />
+      )}
+
+      {isLoading ? <p className="text-[10px] text-[#c9b77a]/30 tracking-widest">Loading…</p> : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-2">
+              {items.map(item => (
+                <SortableTouchRow key={item.id} item={item} onEdit={startEdit} onDelete={del} onToggle={togglePublish} editing={editing} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+    </div>
+  );
+}
+
+function SortableTouchRow({ item, onEdit, onDelete, onToggle, editing }: { item: AdminTouch; onEdit: (i: AdminTouch) => void; onDelete: (id: number) => void; onToggle: (i: AdminTouch) => void; editing: number | null }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(item.id) });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
+      <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
+      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover grayscale opacity-50 shrink-0" />}
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80 truncate">{item.title}</p>
+        {item.subtitle && <p className="text-[9px] text-[#c9b77a]/40 tracking-wider truncate">{item.subtitle}</p>}
+      </div>
+      <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
+      <button onClick={() => onToggle(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Toggle</button>
+      <button onClick={() => onEdit(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Edit</button>
+      <button onClick={() => onDelete(item.id)} className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2">Del</button>
+    </div>
+  );
+}
+
+function TouchForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form: Omit<AdminTouch, "id" | "sortOrder">; onChange: (f: Omit<AdminTouch, "id" | "sortOrder">) => void; onSave: () => void; onCancel: () => void; saving: boolean; isEdit: boolean }) {
+  return (
+    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Title"><input className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} placeholder="Work title" /></Field>
+        <Field label="Subtitle"><input className="admin-input" value={form.subtitle ?? ""} onChange={e => onChange({ ...form, subtitle: e.target.value || null })} placeholder="e.g. Album / Series" /></Field>
+        <Field label="Link URL"><input className="admin-input" value={form.linkUrl ?? ""} onChange={e => onChange({ ...form, linkUrl: e.target.value || null })} placeholder="https://..." /></Field>
+      </div>
+      <Field label="Description"><textarea className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
+      <ImageUploadField inputId="touch-image-input" value={form.imagePath ?? ""} onChange={v => onChange({ ...form, imagePath: v || null })} />
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div onClick={() => onChange({ ...form, published: !form.published })} className={`w-8 h-4 rounded-full transition-colors duration-300 ${form.published ? "bg-[#c9b77a]/60" : "bg-[#c9b77a]/10"}`}>
+            <div className={`w-4 h-4 rounded-full bg-[#c9b77a] transition-transform duration-300 shadow ${form.published ? "translate-x-4" : "translate-x-0"}`} />
+          </div>
+          <span className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/50">{form.published ? "Published" : "Draft"}</span>
+        </label>
+        <div className="flex-1" />
+        <button onClick={onCancel} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors px-4 py-2">Cancel</button>
+        <button onClick={onSave} disabled={saving || !form.title} className="text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/40 text-[#c9b77a]/70 hover:text-[#c9b77a] hover:border-[#c9b77a] transition-colors px-6 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : isEdit ? "Update" : "Create"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── SENSE Panel ──────────────────────────────────────────────────────────────
+
+function SensePanel() {
+  const qc = useQueryClient();
+  const { data: items = [], isLoading } = useQuery<AdminSense[]>({ queryKey: adminSenseKey, queryFn: fetchAdminSense });
+  const [editing, setEditing] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<Omit<AdminSense, "id" | "sortOrder">>({ title: "", date: null, location: null, description: "", imagePath: null, linkUrl: null, published: false });
+  const [saving, setSaving] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const ids = items.map(i => String(i.id));
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: adminSenseKey });
+
+  const resetForm = () => { setForm({ title: "", date: null, location: null, description: "", imagePath: null, linkUrl: null, published: false }); setAdding(false); setEditing(null); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const body = { ...form, date: form.date || null, location: form.location || null, imagePath: form.imagePath || null, linkUrl: form.linkUrl || null };
+      if (editing != null) {
+        await fetch(`${BASE}api/admin/sense/${editing}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      } else {
+        await fetch(`${BASE}api/admin/sense`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      }
+      await invalidate();
+      resetForm();
+    } finally { setSaving(false); }
+  };
+
+  const del = async (id: number) => {
+    if (!confirm("Delete this sense item?")) return;
+    await fetch(`${BASE}api/admin/sense/${id}`, { method: "DELETE" });
+    await invalidate();
+  };
+
+  const togglePublish = async (item: AdminSense) => {
+    await fetch(`${BASE}api/admin/sense/${item.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) });
+    await invalidate();
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = items.findIndex(i => String(i.id) === active.id);
+    const newIdx = items.findIndex(i => String(i.id) === over.id);
+    const reordered = arrayMove(items, oldIdx, newIdx);
+    qc.setQueryData(adminSenseKey, reordered);
+    await fetch(`${BASE}api/admin/sense/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
+    await invalidate();
+  };
+
+  const startEdit = (item: AdminSense) => { setForm({ title: item.title, date: item.date, location: item.location, description: item.description, imagePath: item.imagePath, linkUrl: item.linkUrl, published: item.published }); setEditing(item.id); setAdding(false); };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-lg tracking-widest uppercase text-[#c9b77a]/70">Sense</h2>
+        {!adding && editing == null && (
+          <button onClick={() => { setAdding(true); setEditing(null); }} className="text-[9px] tracking-[0.25em] uppercase border border-[#c9b77a]/30 text-[#c9b77a]/60 hover:text-[#c9b77a] hover:border-[#c9b77a]/60 px-4 py-2 transition-colors duration-300">+ Add Event</button>
+        )}
+      </div>
+
+      {(adding || editing != null) && (
+        <SenseForm form={form} onChange={setForm} onSave={save} onCancel={resetForm} saving={saving} isEdit={editing != null} />
+      )}
+
+      {isLoading ? <p className="text-[10px] text-[#c9b77a]/30 tracking-widest">Loading…</p> : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-2">
+              {items.map(item => (
+                <SortableSenseRow key={item.id} item={item} onEdit={startEdit} onDelete={del} onToggle={togglePublish} editing={editing} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
+    </div>
+  );
+}
+
+function SortableSenseRow({ item, onEdit, onDelete, onToggle, editing }: { item: AdminSense; onEdit: (i: AdminSense) => void; onDelete: (id: number) => void; onToggle: (i: AdminSense) => void; editing: number | null }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(item.id) });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
+      <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
+      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover grayscale opacity-50 shrink-0" />}
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80 truncate">{item.title}</p>
+        <p className="text-[9px] text-[#c9b77a]/40 tracking-wider">{[item.date, item.location].filter(Boolean).join(" · ")}</p>
+      </div>
+      <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
+      <button onClick={() => onToggle(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Toggle</button>
+      <button onClick={() => onEdit(item)} className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2">Edit</button>
+      <button onClick={() => onDelete(item.id)} className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2">Del</button>
+    </div>
+  );
+}
+
+function SenseForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form: Omit<AdminSense, "id" | "sortOrder">; onChange: (f: Omit<AdminSense, "id" | "sortOrder">) => void; onSave: () => void; onCancel: () => void; saving: boolean; isEdit: boolean }) {
+  return (
+    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Title"><input className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} placeholder="Event / Exhibition title" /></Field>
+        <Field label="Date"><input className="admin-input" value={form.date ?? ""} onChange={e => onChange({ ...form, date: e.target.value || null })} placeholder="2025 / Spring" /></Field>
+        <Field label="Location"><input className="admin-input" value={form.location ?? ""} onChange={e => onChange({ ...form, location: e.target.value || null })} placeholder="City, Venue" /></Field>
+        <Field label="Link URL"><input className="admin-input" value={form.linkUrl ?? ""} onChange={e => onChange({ ...form, linkUrl: e.target.value || null })} placeholder="https://..." /></Field>
+      </div>
+      <Field label="Description"><textarea className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
+      <ImageUploadField inputId="sense-image-input" value={form.imagePath ?? ""} onChange={v => onChange({ ...form, imagePath: v || null })} />
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div onClick={() => onChange({ ...form, published: !form.published })} className={`w-8 h-4 rounded-full transition-colors duration-300 ${form.published ? "bg-[#c9b77a]/60" : "bg-[#c9b77a]/10"}`}>
+            <div className={`w-4 h-4 rounded-full bg-[#c9b77a] transition-transform duration-300 shadow ${form.published ? "translate-x-4" : "translate-x-0"}`} />
+          </div>
+          <span className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/50">{form.published ? "Published" : "Draft"}</span>
+        </label>
+        <div className="flex-1" />
+        <button onClick={onCancel} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors px-4 py-2">Cancel</button>
+        <button onClick={onSave} disabled={saving || !form.title} className="text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/40 text-[#c9b77a]/70 hover:text-[#c9b77a] hover:border-[#c9b77a] transition-colors px-6 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : isEdit ? "Update" : "Create"}
+        </button>
+      </div>
     </div>
   );
 }

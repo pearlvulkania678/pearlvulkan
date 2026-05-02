@@ -1,25 +1,136 @@
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+
+const BASE = import.meta.env.BASE_URL;
+
+interface SenseItem {
+  id: number;
+  title: string;
+  date: string | null;
+  location: string | null;
+  description: string;
+  imagePath: string | null;
+  linkUrl: string | null;
+  published: boolean;
+  sortOrder: number;
+}
+
+function useSenseItems() {
+  return useQuery<SenseItem[]>({
+    queryKey: ["sense"],
+    queryFn: () => fetch(`${BASE}api/sense`).then(r => r.json()),
+    staleTime: 30_000,
+  });
+}
 
 export default function Sense() {
+  const { data: items = [], isLoading } = useSenseItems();
+
   return (
-    <div className="w-full flex flex-col items-center justify-center text-center py-32">
-      <motion.div 
-        initial={{ opacity: 0, filter: "blur(10px)" }}
-        whileInView={{ opacity: 1, filter: "blur(0px)" }}
+    <div className="w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 3, ease: "easeOut" }}
-        className="max-w-2xl"
+        transition={{ duration: 1 }}
+        className="mb-24"
       >
-        <p className="font-serif text-3xl md:text-5xl text-foreground leading-relaxed italic mb-12">
-          "It is not empty. It is merely waiting."
-        </p>
-        
-        <div className="w-px h-24 bg-primary/30 mx-auto mb-12"></div>
-        
-        <p className="font-sans text-xs tracking-[0.3em] text-primary uppercase">
-          Breath in. Breath out. Leave.
-        </p>
+        <p className="font-sans text-[10px] tracking-[0.3em] text-primary uppercase mb-3">Experience</p>
+        <h2 className="font-serif text-4xl text-foreground tracking-[0.1em] uppercase mb-4">Sense</h2>
+        <div className="w-12 h-px bg-primary/40" />
       </motion.div>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-16 animate-pulse">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex gap-8 items-start">
+              <div className="w-24 flex flex-col items-center gap-2 shrink-0">
+                <div className="h-3 bg-muted w-16 rounded" />
+                <div className="h-3 bg-muted w-12 rounded" />
+              </div>
+              <div className="flex-1 flex flex-col gap-3">
+                <div className="h-5 bg-muted w-64 rounded" />
+                <div className="h-3 bg-muted w-full rounded" />
+                <div className="h-3 bg-muted w-3/4 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, filter: "blur(10px)" }}
+          animate={{ opacity: 1, filter: "blur(0px)" }}
+          transition={{ duration: 3, ease: "easeOut" }}
+          className="flex flex-col items-center justify-center py-32 gap-8 text-center"
+        >
+          <p className="font-serif text-3xl md:text-5xl text-foreground/40 leading-relaxed italic">
+            "It is not empty. It is merely waiting."
+          </p>
+          <div className="w-px h-16 bg-primary/20 mx-auto" />
+          <p className="font-sans text-[9px] tracking-[0.3em] text-primary/30 uppercase">
+            Breath in. Breath out. Leave.
+          </p>
+        </motion.div>
+      ) : (
+        <div className="flex flex-col">
+          {items.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, filter: "blur(4px)" }}
+              whileInView={{ opacity: 1, filter: "blur(0px)" }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 1.5, delay: i * 0.1 }}
+              className="group flex flex-col md:flex-row gap-8 md:gap-12 py-16 border-t border-primary/10 first:border-t-0 hover:border-primary/20 transition-colors duration-700"
+            >
+              {/* Date + location column */}
+              <div className="md:w-40 shrink-0 flex flex-col gap-1">
+                {item.date && (
+                  <span className="font-sans text-[10px] tracking-[0.25em] text-primary/70 uppercase">
+                    {item.date}
+                  </span>
+                )}
+                {item.location && (
+                  <span className="font-sans text-[9px] tracking-[0.2em] text-muted-foreground/50 uppercase">
+                    {item.location}
+                  </span>
+                )}
+              </div>
+
+              {/* Main content */}
+              <div className="flex-1 flex flex-col md:flex-row gap-8">
+                <div className="flex-1 flex flex-col gap-4">
+                  <h3 className="font-serif text-2xl md:text-3xl text-foreground tracking-wide leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="font-sans text-sm text-muted-foreground/80 font-light leading-relaxed max-w-2xl">
+                    {item.description}
+                  </p>
+                  {item.linkUrl && (
+                    <a
+                      href={item.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="self-start font-sans text-[10px] tracking-[0.25em] text-primary/60 uppercase border-b border-primary/20 pb-0.5 hover:text-primary hover:border-primary transition-colors duration-500 mt-2"
+                    >
+                      Learn more →
+                    </a>
+                  )}
+                </div>
+
+                {item.imagePath && (
+                  <div className="md:w-56 shrink-0 overflow-hidden aspect-[3/2] md:aspect-auto md:h-40 bg-muted">
+                    <img
+                      src={item.imagePath}
+                      alt={item.title}
+                      className="w-full h-full object-cover grayscale opacity-70 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-1000"
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
