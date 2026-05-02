@@ -5,6 +5,7 @@ import poemsRouter from "./poems";
 import galleryRouter from "./gallery";
 import adminAuthRouter from "./admin-auth";
 import uploadRouter from "./upload";
+import activityRouter from "./activity";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(uploadRouter);
 router.use(tracksRouter);
 router.use(poemsRouter);
 router.use(galleryRouter);
+router.use(activityRouter);
 
 export default router;

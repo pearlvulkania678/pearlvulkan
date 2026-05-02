@@ -10,6 +10,7 @@ import {
   DeletePoemParams,
   ListPoemsResponseItem,
 } from "@workspace/api-zod";
+import { logActivity } from "../lib/activity";
 
 const router: IRouter = Router();
 
@@ -30,6 +31,7 @@ router.post("/poems", async (req, res): Promise<void> => {
     return;
   }
   const [poem] = await db.insert(poemsTable).values(parsed.data).returning();
+  await logActivity("CREATE", "poem", poem.id, poem.title);
   res.status(201).json(ListPoemsResponseItem.parse(serializePoem(poem)));
 });
 
@@ -54,6 +56,7 @@ router.patch("/poems/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Poem not found" });
     return;
   }
+  await logActivity("UPDATE", "poem", poem.id, poem.title);
   res.json(UpdatePoemResponse.parse(serializePoem(poem)));
 });
 
@@ -69,6 +72,7 @@ router.delete("/poems/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Poem not found" });
     return;
   }
+  await logActivity("DELETE", "poem", poem.id, poem.title);
   res.sendStatus(204);
 });
 

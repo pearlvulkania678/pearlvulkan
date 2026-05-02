@@ -10,6 +10,7 @@ import {
   DeleteTrackParams,
   ListTracksResponseItem,
 } from "@workspace/api-zod";
+import { logActivity } from "../lib/activity";
 
 const router: IRouter = Router();
 
@@ -30,6 +31,7 @@ router.post("/tracks", async (req, res): Promise<void> => {
     return;
   }
   const [track] = await db.insert(tracksTable).values(parsed.data).returning();
+  await logActivity("CREATE", "track", track.id, track.title);
   res.status(201).json(ListTracksResponseItem.parse(serializeTrack(track)));
 });
 
@@ -54,6 +56,7 @@ router.patch("/tracks/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Track not found" });
     return;
   }
+  await logActivity("UPDATE", "track", track.id, track.title);
   res.json(UpdateTrackResponse.parse(serializeTrack(track)));
 });
 
@@ -69,6 +72,7 @@ router.delete("/tracks/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Track not found" });
     return;
   }
+  await logActivity("DELETE", "track", track.id, track.title);
   res.sendStatus(204);
 });
 

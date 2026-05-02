@@ -10,6 +10,7 @@ import {
   DeleteGalleryItemParams,
   ListGalleryResponseItem,
 } from "@workspace/api-zod";
+import { logActivity } from "../lib/activity";
 
 const router: IRouter = Router();
 
@@ -30,6 +31,7 @@ router.post("/gallery", async (req, res): Promise<void> => {
     return;
   }
   const [item] = await db.insert(galleryTable).values(parsed.data).returning();
+  await logActivity("CREATE", "gallery", item.id, item.caption);
   res.status(201).json(ListGalleryResponseItem.parse(serializeGallery(item)));
 });
 
@@ -54,6 +56,7 @@ router.patch("/gallery/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Gallery item not found" });
     return;
   }
+  await logActivity("UPDATE", "gallery", item.id, item.caption);
   res.json(UpdateGalleryItemResponse.parse(serializeGallery(item)));
 });
 
@@ -69,6 +72,7 @@ router.delete("/gallery/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Gallery item not found" });
     return;
   }
+  await logActivity("DELETE", "gallery", item.id, item.caption);
   res.sendStatus(204);
 });
 

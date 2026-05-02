@@ -1,14 +1,13 @@
 import { useEffect, useState, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import Start from "@/components/sections/Start";
 import Listen from "@/components/sections/Listen";
-import Read from "@/components/sections/Read";
 import See from "@/components/sections/See";
 import Touch from "@/components/sections/Touch";
 import Sense from "@/components/sections/Sense";
 import Navigation from "@/components/Navigation";
 
-const sections = ["start", "listen", "read", "see", "touch", "sense"];
+const sections = ["start", "listen", "see", "touch", "sense"];
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState("start");
@@ -47,17 +46,11 @@ export default function Home() {
         <section id="start" className="min-h-screen flex items-center pt-24 pb-24">
           <Start />
         </section>
-        
+
         <div className="w-full h-px bg-primary/20 my-12" />
 
         <section id="listen" className="min-h-screen flex items-center pt-24 pb-24">
           <Listen />
-        </section>
-
-        <div className="w-full h-px bg-primary/20 my-12" />
-
-        <section id="read" className="min-h-screen flex items-center pt-24 pb-24">
-          <Read />
         </section>
 
         <div className="w-full h-px bg-primary/20 my-12" />

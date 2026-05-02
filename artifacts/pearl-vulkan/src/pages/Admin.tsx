@@ -30,7 +30,7 @@ import {
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
-type Tab = "tracks" | "poems" | "gallery";
+type Tab = "tracks" | "poems" | "gallery" | "log";
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
 interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
@@ -134,7 +134,7 @@ function AdminPanel() {
         </div>
         <div className="flex items-center gap-8">
           <div className="flex gap-6">
-            {(["tracks", "poems", "gallery"] as Tab[]).map(t => (
+            {(["tracks", "poems", "gallery", "log"] as Tab[]).map(t => (
               <button key={t} data-testid={`tab-${t}`} onClick={() => setTab(t)}
                 className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${tab === t ? "text-[#c9b77a] border-b border-[#c9b77a]" : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"}`}>
                 {t}
@@ -151,6 +151,7 @@ function AdminPanel() {
         {tab === "tracks"  && <TracksPanel />}
         {tab === "poems"   && <PoemsPanel />}
         {tab === "gallery" && <GalleryPanel />}
+        {tab === "log"     && <ActivityPanel />}
       </main>
     </div>
   );
@@ -995,4 +996,106 @@ function FormActions({ onSave, onCancel, saving, label }: { onSave: () => void; 
 
 function Loading() {
   return <div className="flex items-center justify-center py-24 text-[10px] tracking-widest text-[#c9b77a]/30 uppercase animate-pulse">Loading...</div>;
+}
+
+// ─── Activity log panel ───────────────────────────────────────────────────────
+interface ActivityEntry {
+  id: number;
+  action: string;
+  entity: string;
+  entityId: number;
+  entityTitle: string | null;
+  createdAt: string;
+}
+
+const ACTION_STYLES: Record<string, string> = {
+  CREATE: "text-emerald-400/70 border-emerald-400/30",
+  UPDATE: "text-[#c9b77a]/60 border-[#c9b77a]/20",
+  DELETE: "text-red-400/60 border-red-400/20",
+};
+
+const ENTITY_LABELS: Record<string, string> = {
+  track: "Track",
+  poem: "Poem",
+  gallery: "Image",
+};
+
+function ActivityPanel() {
+  const { data: entries = [], isLoading, refetch } = useQuery<ActivityEntry[]>({
+    queryKey: ["admin", "activity"],
+    queryFn: () => fetch(`${BASE}api/admin/activity`).then(r => r.json()),
+    refetchInterval: 15_000,
+  });
+
+  function fmtTime(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    const secs = Math.floor((now.getTime() - d.getTime()) / 1000);
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs tracking-[0.3em] uppercase text-[#c9b77a]/60">
+          Activity Log {entries.length > 0 && `(${entries.length})`}
+        </h2>
+        <button
+          onClick={() => refetch()}
+          className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {isLoading ? (
+        <Loading />
+      ) : entries.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <span className="text-[10px] tracking-[0.3em] uppercase text-[#c9b77a]/20">No activity yet</span>
+          <span className="text-[9px] text-[#c9b77a]/15">Actions will appear here as you create, update, or delete content.</span>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          {entries.map((e, i) => (
+            <div
+              key={e.id}
+              className={`flex items-start gap-4 py-4 ${i < entries.length - 1 ? "border-b border-[#c9b77a]/8" : ""}`}
+            >
+              {/* Timeline dot */}
+              <div className="flex flex-col items-center pt-1 shrink-0">
+                <div className={`w-1.5 h-1.5 rounded-full border ${ACTION_STYLES[e.action] ?? "text-[#c9b77a]/30 border-[#c9b77a]/20"}`} style={{ background: "currentColor" }} />
+                {i < entries.length - 1 && (
+                  <div className="w-px flex-1 bg-[#c9b77a]/8 mt-2" style={{ minHeight: "20px" }} />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 flex items-baseline justify-between gap-4 min-w-0">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <span className={`text-[8px] tracking-[0.25em] uppercase border px-1.5 py-0.5 shrink-0 ${ACTION_STYLES[e.action] ?? "text-[#c9b77a]/30 border-[#c9b77a]/20"}`}>
+                    {e.action}
+                  </span>
+                  <span className="text-[9px] tracking-[0.15em] text-[#c9b77a]/40 uppercase shrink-0">
+                    {ENTITY_LABELS[e.entity] ?? e.entity}
+                  </span>
+                  {e.entityTitle && (
+                    <span className="font-serif text-sm text-[#c9b77a]/70 italic truncate">
+                      {e.entityTitle}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[8px] tracking-wider text-[#c9b77a]/25 shrink-0 tabular-nums">
+                  {fmtTime(e.createdAt)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

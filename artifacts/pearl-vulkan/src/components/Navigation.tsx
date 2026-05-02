@@ -8,7 +8,6 @@ export default function Navigation({ activeSection }: NavigationProps) {
   const links = [
     { id: "start",  label: "START"  },
     { id: "listen", label: "LISTEN" },
-    { id: "read",   label: "READ"   },
     { id: "see",    label: "SEE"    },
     { id: "touch",  label: "TOUCH"  },
     { id: "sense",  label: "SENSE"  },
