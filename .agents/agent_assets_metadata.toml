@@ -1,0 +1,50 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "Tdw33vBwO8WFKDB70kqS7"
+uri = "file://artifacts/pearl-vulkan/public/images/see-1.png"
+type = "image"
+title = "Abstract dark painting amber"
+
+[[generated]]
+id = "Tyv9wTEaI2bHZ0DlDeWtw"
+uri = "file://artifacts/pearl-vulkan/public/images/see-2.png"
+type = "image"
+title = "Faded manuscript texture"
+
+[[generated]]
+id = "7UJKe-h8U7ulLio4doooq"
+uri = "file://artifacts/pearl-vulkan/public/images/see-3.png"
+type = "image"
+title = "Blurred silhouette dark room"
+
+[[generated]]
+id = "Cgl_IY96lSU9weoWVt4Az"
+uri = "file://artifacts/pearl-vulkan/public/images/listen-1.png"
+type = "image"
+title = "Sound waves charcoal amber"
+
+[[generated]]
+id = "mysXw65iv2Vnnzz3ZxV3B"
+uri = "file://artifacts/pearl-vulkan/public/images/listen-2.png"
+type = "image"
+title = "Old piano string dark"
+
+[[generated]]
+id = "XhtWIvdK84VDUHT4a0sGV"
+uri = "file://artifacts/pearl-vulkan/public/images/listen-3.png"
+type = "image"
+title = "Foggy landscape abstract"
+
+[[generated]]
+id = "E0eSkUCn4j3jG97txTaI0"
+uri = "file://artifacts/pearl-vulkan/public/images/listen-4.png"
+type = "image"
+title = "Dark ambient texture"
+
+[[generated]]
+id = "mn2_2DtFFRtGTznn_QZKv"
+uri = "file://artifacts/pearl-vulkan/public/images/listen-5.png"
+type = "image"
+title = "Static noise texture amber"
