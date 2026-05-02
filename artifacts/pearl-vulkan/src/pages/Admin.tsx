@@ -468,6 +468,41 @@ function blocksToContent(blocks: PoemBlockWithId[]): string {
   return JSON.stringify(clean);
 }
 
+function PoemContentPreview({ content, published }: { content: string; published: boolean }) {
+  const blocks = parsePoemBlocks(content);
+  const textBlocks  = blocks.filter(b => b.type === "text")  as Extract<PoemBlock, { type: "text" }>[];
+  const imageCount  = blocks.filter(b => b.type === "image").length;
+  const videoCount  = blocks.filter(b => b.type === "video").length;
+  const previewText = textBlocks.map(b => b.value).join(" ").trim().slice(0, 160);
+  const dimText = published ? "text-[#c9b77a]/50" : "text-[#c9b77a]/25";
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {previewText ? (
+        <p className={`font-serif text-sm italic leading-relaxed line-clamp-2 ${dimText}`}>
+          {previewText}{previewText.length === 160 ? "…" : ""}
+        </p>
+      ) : (
+        <p className={`text-xs ${dimText} italic`}>No text</p>
+      )}
+      {(imageCount > 0 || videoCount > 0) && (
+        <div className="flex gap-2">
+          {imageCount > 0 && (
+            <span className="text-[8px] tracking-[0.2em] uppercase border border-sky-400/25 text-sky-400/50 px-1.5 py-0.5">
+              {imageCount} image{imageCount > 1 ? "s" : ""}
+            </span>
+          )}
+          {videoCount > 0 && (
+            <span className="text-[8px] tracking-[0.2em] uppercase border border-violet-400/25 text-violet-400/50 px-1.5 py-0.5">
+              {videoCount} video{videoCount > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SortableTrackRow({ track, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
   track: AdminTrack; isEditing: boolean;
   form: TrackFormState; onFormChange: (f: TrackFormState) => void;
@@ -527,7 +562,7 @@ function SortablePoemRow({ poem, isEditing, form, onFormChange, onSave, onCancel
                 {poem.title && <span className={`font-serif text-base italic ${poem.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{poem.title}</span>}
                 <PublishToggle published={poem.published} onToggle={onTogglePublish} saving={saving} />
               </div>
-              <pre className={`text-xs whitespace-pre-wrap font-sans leading-relaxed line-clamp-3 ${poem.published ? "text-[#c9b77a]/50" : "text-[#c9b77a]/25"}`}>{poem.content}</pre>
+              <PoemContentPreview content={poem.content} published={poem.published} />
               <div className="flex gap-2 flex-wrap mt-1">
                 {poem.tags.map(tag => <span key={tag} className="text-[9px] tracking-widest text-[#c9b77a]/40 border border-[#c9b77a]/20 px-2 py-0.5">{tag}</span>)}
               </div>
