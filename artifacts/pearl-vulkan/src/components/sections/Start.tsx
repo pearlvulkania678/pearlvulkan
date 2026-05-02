@@ -34,7 +34,7 @@ export function StartBackground() {
   if (!s.backgroundImage) return null;
   return (
     <div
-      className="fixed inset-0 -z-10 pointer-events-none"
+      className="fixed inset-0 z-0 pointer-events-none"
       style={{ opacity: (s.bgOpacity ?? 15) / 100 }}
     >
       <img

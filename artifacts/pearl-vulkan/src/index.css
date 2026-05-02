@@ -141,6 +141,11 @@
   --destructive-border: hsl(var(--destructive));
 }
 
+html, body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
