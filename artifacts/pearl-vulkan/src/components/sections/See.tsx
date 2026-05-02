@@ -38,7 +38,6 @@ export default function See() {
         transition={{ duration: 1 }}
         className="mb-24"
       >
-        <p className="font-sans text-[10px] tracking-[0.3em] text-primary uppercase mb-3">Text & Visual</p>
         <h2 className="font-serif text-4xl text-foreground tracking-[0.1em] uppercase mb-4">See</h2>
         <div className="w-12 h-px bg-primary/40"></div>
       </motion.div>
@@ -46,16 +45,6 @@ export default function See() {
       {/* ── Poems ── */}
       {(poemsLoading || poems.length > 0) && (
         <div className="mb-40">
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="font-sans text-[9px] tracking-[0.35em] text-primary/40 uppercase mb-16"
-          >
-            — Text —
-          </motion.p>
-
           {poemsLoading ? (
             <div className="flex flex-col gap-32 max-w-3xl mx-auto animate-pulse">
               {[1, 2, 3].map((i) => (
@@ -169,16 +158,6 @@ export default function See() {
       {/* ── Gallery ── */}
       {(galleryLoading || items.length > 0) && (
         <div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="font-sans text-[9px] tracking-[0.35em] text-primary/40 uppercase mb-16"
-          >
-            — Visual —
-          </motion.p>
-
           {galleryLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-24 animate-pulse">
               {[1, 2, 3].map((i) => (
