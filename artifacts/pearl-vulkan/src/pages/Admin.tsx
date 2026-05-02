@@ -36,23 +36,20 @@ const adminSenseKey = ["admin", "sense"] as const;
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
-type Tab = "tracks" | "poems" | "gallery" | "touch" | "sense" | "log";
+type Tab = "tracks" | "poems" | "touch" | "sense" | "log";
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
 interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem    { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
-interface AdminGallery { id: number; src: string; caption: string; published: boolean; sortOrder: number; }
 interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string; imagePath: string | null; linkUrl: string | null; published: boolean; sortOrder: number; }
 interface AdminSense   { id: number; title: string; date: string | null; location: string | null; description: string; imagePath: string | null; linkUrl: string | null; published: boolean; sortOrder: number; }
 
 // ─── Admin-specific fetchers (see all, incl. drafts) ────────────────────────
-const fetchAdminTracks  = () => fetch(`${BASE}api/admin/tracks`).then(r => r.json()) as Promise<AdminTrack[]>;
-const fetchAdminPoems   = () => fetch(`${BASE}api/admin/poems`).then(r => r.json())  as Promise<AdminPoem[]>;
-const fetchAdminGallery = () => fetch(`${BASE}api/admin/gallery`).then(r => r.json()) as Promise<AdminGallery[]>;
+const fetchAdminTracks = () => fetch(`${BASE}api/admin/tracks`).then(r => r.json()) as Promise<AdminTrack[]>;
+const fetchAdminPoems  = () => fetch(`${BASE}api/admin/poems`).then(r => r.json())  as Promise<AdminPoem[]>;
 
-const adminTracksKey  = ["admin", "tracks"]  as const;
-const adminPoemsKey   = ["admin", "poems"]   as const;
-const adminGalleryKey = ["admin", "gallery"] as const;
+const adminTracksKey = ["admin", "tracks"] as const;
+const adminPoemsKey  = ["admin", "poems"]  as const;
 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Admin() {
@@ -142,7 +139,7 @@ function AdminPanel() {
         </div>
         <div className="flex items-center gap-8">
           <div className="flex gap-6 flex-wrap">
-            {(["tracks", "poems", "gallery", "touch", "sense", "log"] as Tab[]).map(t => (
+            {(["tracks", "poems", "touch", "sense", "log"] as Tab[]).map(t => (
               <button key={t} data-testid={`tab-${t}`} onClick={() => setTab(t)}
                 className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${tab === t ? "text-[#c9b77a] border-b border-[#c9b77a]" : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"}`}>
                 {t}
@@ -156,10 +153,9 @@ function AdminPanel() {
         <BuildBanner />
       </div>
       <main className="px-8 py-10 max-w-4xl mx-auto">
-        {tab === "tracks"  && <TracksPanel />}
-        {tab === "poems"   && <PoemsPanel />}
-        {tab === "gallery" && <GalleryPanel />}
-        {tab === "touch"   && <TouchPanel />}
+        {tab === "tracks" && <TracksPanel />}
+        {tab === "poems"  && <PoemsPanel />}
+        {tab === "touch"  && <TouchPanel />}
         {tab === "sense"   && <SensePanel />}
         {tab === "log"     && <ActivityPanel />}
       </main>
@@ -370,91 +366,9 @@ function PoemsPanel() {
   );
 }
 
-// ─── Gallery panel ────────────────────────────────────────────────────────────
-function GalleryPanel() {
-  const qc = useQueryClient();
-  const { data: items = [], isLoading } = useQuery({ queryKey: adminGalleryKey, queryFn: fetchAdminGallery });
-  const createItem = useCreateGalleryItem();
-  const updateItem = useUpdateGalleryItem();
-  const deleteItem = useDeleteGalleryItem();
-
-  const [editing, setEditing] = useState<number | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ src: "", caption: "" });
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const invalidate = () => qc.invalidateQueries({ queryKey: adminGalleryKey });
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const reordered = arrayMove(items, items.findIndex(g => g.id === active.id), items.findIndex(g => g.id === over.id));
-    qc.setQueryData(adminGalleryKey, reordered);
-    reordered.forEach((g, i) => { if (g.sortOrder !== i) updateItem.mutate({ id: g.id, data: { sortOrder: i } }, { onSuccess: invalidate }); });
-  };
-
-  const handleCreate = () => {
-    createItem.mutate({ data: { src: form.src, caption: form.caption } }, { onSuccess: () => { invalidate(); setAdding(false); setForm({ src: "", caption: "" }); } });
-  };
-
-  const handleUpdate = (id: number) => {
-    updateItem.mutate({ id, data: { src: form.src, caption: form.caption } }, { onSuccess: () => { invalidate(); setEditing(null); } });
-  };
-
-  const handleTogglePublish = (g: AdminGallery) => {
-    updateItem.mutate({ id: g.id, data: { published: !g.published } }, { onSuccess: invalidate });
-  };
-
-  const handleDelete = (id: number) => {
-    if (!confirm("Delete this gallery item?")) return;
-    deleteItem.mutate({ id }, { onSuccess: invalidate });
-  };
-
-  const startEdit = (item: AdminGallery) => { setEditing(item.id); setForm({ src: item.src, caption: item.caption }); };
-
-  if (isLoading) return <Loading />;
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xs tracking-[0.3em] uppercase text-[#c9b77a]/60">Gallery ({items.length})</h2>
-          <span className="text-[9px] text-[#c9b77a]/25 tracking-wider">drag to reorder</span>
-        </div>
-        <button data-testid="add-gallery" onClick={() => { setAdding(true); setEditing(null); }} className="btn-admin">+ Add Image</button>
-      </div>
-
-      {adding && <GalleryForm form={form} onChange={setForm} onSave={handleCreate} onCancel={() => setAdding(false)} saving={createItem.isPending} label="Create" />}
-
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={items.map(g => g.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-3">
-            {items.map(item => (
-              <SortableGalleryRow
-                key={item.id}
-                item={item}
-                isEditing={editing === item.id}
-                form={form}
-                onFormChange={setForm}
-                onSave={() => handleUpdate(item.id)}
-                onCancelEdit={() => setEditing(null)}
-                onStartEdit={() => startEdit(item)}
-                onDelete={() => handleDelete(item.id)}
-                onTogglePublish={() => handleTogglePublish(item)}
-                saving={updateItem.isPending}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    </div>
-  );
-}
-
 // ─── Sortable row components (hooks must be at component top level, not in .map) ─
 type TrackFormState = { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; soundcloudUrl: string; hasListen: boolean };
 type PoemFormState  = { title: string; content: string; tags: string };
-type GalleryFormState = { src: string; caption: string };
 
 // ─── Poem block types ──────────────────────────────────────────────────────────
 type PoemBlock =
@@ -580,40 +494,6 @@ function SortablePoemRow({ poem, isEditing, form, onFormChange, onSave, onCancel
             <div className="flex gap-3 shrink-0">
               <button data-testid={`edit-poem-${poem.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
               <button data-testid={`delete-poem-${poem.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SortableGalleryRow({ item, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
-  item: AdminGallery; isEditing: boolean;
-  form: GalleryFormState; onFormChange: (f: GalleryFormState) => void;
-  onSave: () => void; onCancelEdit: () => void; onStartEdit: () => void;
-  onDelete: () => void; onTogglePublish: () => void; saving: boolean;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      data-testid={`gallery-row-${item.id}`} className="border border-[#c9b77a]/15 flex">
-      <DragHandle {...attributes} {...listeners} />
-      <div className="flex-1 p-4">
-        {isEditing ? (
-          <GalleryForm form={form} onChange={onFormChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
-        ) : (
-          <div className="flex items-center gap-4">
-            <div className={`w-20 h-16 overflow-hidden bg-[#1a1919] shrink-0 ${!item.published ? "opacity-30" : ""}`}>
-              <img src={item.src} alt={item.caption} className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <span className={`text-[9px] tracking-[0.25em] uppercase ${item.published ? "text-[#c9b77a]/60" : "text-[#c9b77a]/25"}`}>{item.caption}</span>
-              <PublishToggle published={item.published} onToggle={onTogglePublish} saving={saving} />
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <button data-testid={`edit-gallery-${item.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
-              <button data-testid={`delete-gallery-${item.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
             </div>
           </div>
         )}
@@ -939,30 +819,6 @@ function PoemVideoBlock({ src, caption, onChangeSrc, onChangeCaption }: {
   );
 }
 
-function GalleryForm({ form, onChange, onSave, onCancel, saving, label }: {
-  form: { src: string; caption: string };
-  onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
-}) {
-  return (
-    <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
-      <ImageUploadField
-        value={form.src}
-        onChange={src => onChange({ ...form, src })}
-      />
-      <Field label="Caption">
-        <input
-          data-testid="input-gallery-caption"
-          className="admin-input"
-          value={form.caption}
-          onChange={e => onChange({ ...form, caption: e.target.value })}
-          placeholder="STUDY IN AMBER"
-        />
-      </Field>
-      <FormActions onSave={onSave} onCancel={onCancel} saving={saving} label={label} />
-    </div>
-  );
-}
-
 function ImageUploadField({ value, onChange, inputId = "gallery-file-input" }: { value: string; onChange: (url: string) => void; inputId?: string }) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1169,7 +1025,6 @@ const ACTION_STYLES: Record<string, string> = {
 const ENTITY_LABELS: Record<string, string> = {
   track: "Track",
   poem: "Poem",
-  gallery: "Image",
   touch: "Touch",
   sense: "Sense",
 };
