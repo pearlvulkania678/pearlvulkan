@@ -493,10 +493,110 @@ function GalleryForm({ form, onChange, onSave, onCancel, saving, label }: {
 }) {
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
-      <Field label="Image URL or Path"><input data-testid="input-gallery-src" className="admin-input" value={form.src} onChange={e => onChange({ ...form, src: e.target.value })} placeholder="/images/see-1.png or https://..." /></Field>
-      <Field label="Caption"><input data-testid="input-gallery-caption" className="admin-input" value={form.caption} onChange={e => onChange({ ...form, caption: e.target.value })} placeholder="STUDY IN AMBER" /></Field>
-      {form.src && <div className="w-32 h-20 overflow-hidden bg-[#1a1919]"><img src={form.src} alt="preview" className="w-full h-full object-cover opacity-70" /></div>}
+      <ImageUploadField
+        value={form.src}
+        onChange={src => onChange({ ...form, src })}
+      />
+      <Field label="Caption">
+        <input
+          data-testid="input-gallery-caption"
+          className="admin-input"
+          value={form.caption}
+          onChange={e => onChange({ ...form, caption: e.target.value })}
+          placeholder="STUDY IN AMBER"
+        />
+      </Field>
       <FormActions onSave={onSave} onCancel={onCancel} saving={saving} label={label} />
+    </div>
+  );
+}
+
+function ImageUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const inputRef = useState<HTMLInputElement | null>(null);
+  const BASE = import.meta.env.BASE_URL;
+
+  const upload = async (file: File) => {
+    setUploading(true); setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
+      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
+      const { url } = await res.json() as { url: string };
+      onChange(url);
+    } catch { setError("Upload failed — check connection"); }
+    finally { setUploading(false); }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) upload(file);
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) upload(file);
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Image</label>
+
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById("gallery-file-input")?.click()}
+        className={`relative border-2 border-dashed transition-colors duration-300 cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden ${
+          dragging ? "border-[#c9b77a]/60 bg-[#c9b77a]/5" : "border-[#c9b77a]/20 hover:border-[#c9b77a]/40"
+        } ${value ? "h-40" : "h-28"}`}
+      >
+        {value && (
+          <img src={value} alt="preview" className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale" />
+        )}
+        <div className={`relative z-10 flex flex-col items-center gap-1 pointer-events-none ${value ? "text-[#c9b77a]/80" : "text-[#c9b77a]/30"}`}>
+          {uploading ? (
+            <>
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+              <span className="text-[9px] tracking-widest uppercase">Uploading…</span>
+            </>
+          ) : value ? (
+            <span className="text-[9px] tracking-widest uppercase">Click or drop to replace</span>
+          ) : (
+            <>
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+              <span className="text-[9px] tracking-widest uppercase">Drop image or click to browse</span>
+              <span className="text-[8px] text-[#c9b77a]/30">JPG, PNG, WebP — max 20 MB</span>
+            </>
+          )}
+        </div>
+        <input
+          id="gallery-file-input"
+          ref={el => { inputRef[1](el); }}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFile}
+          data-testid="gallery-file-input"
+        />
+      </div>
+
+      {error && <p className="text-[9px] text-red-400/70 tracking-wider">{error}</p>}
+
+      <div className="flex items-center gap-2">
+        <span className="text-[8px] text-[#c9b77a]/30 uppercase tracking-widest shrink-0">Or paste URL</span>
+        <input
+          className="admin-input text-xs"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="https://... or /images/..."
+          data-testid="input-gallery-src"
+        />
+      </div>
     </div>
   );
 }
