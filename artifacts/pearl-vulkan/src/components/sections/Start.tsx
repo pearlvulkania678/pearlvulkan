@@ -33,16 +33,27 @@ export function StartBackground() {
   const s = data ?? DEFAULTS;
   if (!s.backgroundImage) return null;
   return (
-    <div
-      className="fixed inset-0 z-0 pointer-events-none"
-      style={{ opacity: (s.bgOpacity ?? 15) / 100 }}
-    >
-      <img
-        src={s.backgroundImage}
-        alt=""
-        className="w-full h-full object-cover"
+    <>
+      {/* Background image at controlled opacity */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{ opacity: (s.bgOpacity ?? 15) / 100 }}
+      >
+        <img
+          src={s.backgroundImage}
+          alt=""
+          className="w-full h-full object-cover"
+        />
+      </div>
+      {/* Gradient fade — always fully opaque, independent of image opacity */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-0 pointer-events-none"
+        style={{
+          height: "60vh",
+          background: "linear-gradient(to bottom, transparent 0%, hsl(0, 0%, 10%) 100%)",
+        }}
       />
-    </div>
+    </>
   );
 }
 
