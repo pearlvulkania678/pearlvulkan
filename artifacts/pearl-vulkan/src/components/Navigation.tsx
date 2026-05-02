@@ -38,22 +38,37 @@ export default function Navigation({ activeSection }: NavigationProps) {
   };
 
   return (
-    <nav className="fixed right-3 md:right-10 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-4">
+    <nav
+      className="fixed right-0 top-1/2 -translate-y-1/2 z-[999] flex flex-col gap-5 pr-4 md:pr-10"
+      style={{ pointerEvents: "auto" }}
+    >
       {NAV_LINKS.map((link, i) => {
         const active = isActive(link.id);
         return (
           <motion.button
             key={link.id}
             onClick={() => handleClick(link.id)}
-            initial={{ opacity: 0, x: 16 }}
+            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: i * 0.07 }}
-            className="flex items-center gap-2 md:gap-3 group"
+            transition={{ duration: 0.6, delay: i * 0.08 }}
+            className="flex items-center gap-3 group cursor-pointer"
           >
-            <span className={`hidden md:block font-sans text-[9px] tracking-[0.25em] uppercase transition-colors duration-500 ${active ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground/80"}`}>
-              {link.label.toUpperCase()}
+            <span
+              className={`font-sans text-[9px] md:text-[10px] tracking-[0.3em] uppercase transition-colors duration-500 ${
+                active
+                  ? "text-primary"
+                  : "text-muted-foreground/50 group-hover:text-muted-foreground/90"
+              }`}
+            >
+              {link.label}
             </span>
-            <span className={`block w-px flex-shrink-0 transition-all duration-500 ${active ? "h-8 bg-primary" : "h-3 bg-muted-foreground/25 group-hover:h-5 group-hover:bg-muted-foreground/50"}`} />
+            <span
+              className={`block flex-shrink-0 transition-all duration-500 ${
+                active
+                  ? "w-[2px] h-8 bg-primary"
+                  : "w-[1px] h-4 bg-muted-foreground/40 group-hover:h-6 group-hover:bg-muted-foreground/70"
+              }`}
+            />
           </motion.button>
         );
       })}
