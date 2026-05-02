@@ -278,6 +278,8 @@ components:
           type: string
         imagePath:
           type: ["string", "null"]
+        audioPath:
+          type: ["string", "null"]
         hasListen:
           type: boolean
         published:
@@ -295,6 +297,7 @@ components:
         - duration
         - description
         - imagePath
+        - audioPath
         - hasListen
         - published
         - sortOrder
@@ -313,6 +316,8 @@ components:
         description:
           type: string
         imagePath:
+          type: ["string", "null"]
+        audioPath:
           type: ["string", "null"]
         hasListen:
           type: boolean
@@ -338,6 +343,8 @@ components:
         description:
           type: string
         imagePath:
+          type: ["string", "null"]
+        audioPath:
           type: ["string", "null"]
         hasListen:
           type: boolean

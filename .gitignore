@@ -48,5 +48,4 @@ Thumbs.db
 .cache/
 .local/
 
-# User uploads (store these outside version control)
-artifacts/pearl-vulkan/public/uploads/
+# (uploads are included in version control intentionally)

@@ -9,6 +9,7 @@ export const tracksTable = pgTable("tracks", {
   duration: text("duration").notNull(),
   description: text("description").notNull(),
   imagePath: text("image_path"),
+  audioPath: text("audio_path"),
   hasListen: boolean("has_listen").notNull().default(false),
   published: boolean("published").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),

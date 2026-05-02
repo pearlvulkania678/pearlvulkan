@@ -33,7 +33,7 @@ const BASE = import.meta.env.BASE_URL;
 type Tab = "tracks" | "poems" | "gallery";
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
-interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
+interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem  { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
 interface AdminGallery { id: number; src: string; caption: string; published: boolean; sortOrder: number; }
 
@@ -158,7 +158,7 @@ function TracksPanel() {
 
   const [editing, setEditing] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: "", genre: "", duration: "", description: "", imagePath: "", hasListen: false });
+  const [form, setForm] = useState({ title: "", genre: "", duration: "", description: "", imagePath: "", audioPath: "", hasListen: false });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const invalidate = () => qc.invalidateQueries({ queryKey: adminTracksKey });
@@ -173,14 +173,14 @@ function TracksPanel() {
 
   const handleCreate = () => {
     createTrack.mutate(
-      { data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, hasListen: form.hasListen } },
-      { onSuccess: () => { invalidate(); setAdding(false); setForm({ title: "", genre: "", duration: "", description: "", imagePath: "", hasListen: false }); } }
+      { data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, audioPath: form.audioPath || null, hasListen: form.hasListen } },
+      { onSuccess: () => { invalidate(); setAdding(false); setForm({ title: "", genre: "", duration: "", description: "", imagePath: "", audioPath: "", hasListen: false }); } }
     );
   };
 
   const handleUpdate = (id: number) => {
     updateTrack.mutate(
-      { id, data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, hasListen: form.hasListen } },
+      { id, data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, audioPath: form.audioPath || null, hasListen: form.hasListen } },
       { onSuccess: () => { invalidate(); setEditing(null); } }
     );
   };
@@ -194,7 +194,7 @@ function TracksPanel() {
     deleteTrack.mutate({ id }, { onSuccess: invalidate });
   };
 
-  const startEdit = (t: AdminTrack) => { setEditing(t.id); setForm({ title: t.title, genre: t.genre, duration: t.duration, description: t.description, imagePath: t.imagePath ?? "", hasListen: t.hasListen }); };
+  const startEdit = (t: AdminTrack) => { setEditing(t.id); setForm({ title: t.title, genre: t.genre, duration: t.duration, description: t.description, imagePath: t.imagePath ?? "", audioPath: t.audioPath ?? "", hasListen: t.hasListen }); };
 
   if (isLoading) return <Loading />;
 
@@ -452,7 +452,7 @@ function useSortableItem(id: number) {
 
 // ─── Shared form components ───────────────────────────────────────────────────
 function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
-  form: { title: string; genre: string; duration: string; description: string; imagePath: string; hasListen: boolean };
+  form: { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; hasListen: boolean };
   onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
   return (
@@ -461,13 +461,10 @@ function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
         <Field label="Title"><input data-testid="input-title" className="admin-input" value={form.title} onChange={e => onChange({ ...form, title: e.target.value })} /></Field>
         <Field label="Genre"><input data-testid="input-genre" className="admin-input" value={form.genre} onChange={e => onChange({ ...form, genre: e.target.value })} placeholder="AMBIENT / DRONE" /></Field>
         <Field label="Duration"><input data-testid="input-duration" className="admin-input" value={form.duration} onChange={e => onChange({ ...form, duration: e.target.value })} placeholder="3:24" /></Field>
-        <Field label="Image Path"><input data-testid="input-image" className="admin-input" value={form.imagePath} onChange={e => onChange({ ...form, imagePath: e.target.value })} placeholder="/images/listen-1.png" /></Field>
+        <Field label="Cover Image Path"><input data-testid="input-image" className="admin-input" value={form.imagePath} onChange={e => onChange({ ...form, imagePath: e.target.value })} placeholder="/images/listen-1.png" /></Field>
       </div>
       <Field label="Description"><textarea data-testid="input-description" className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
-      <label className="flex items-center gap-2 text-xs text-[#c9b77a]/60 cursor-pointer">
-        <input type="checkbox" checked={form.hasListen} onChange={e => onChange({ ...form, hasListen: e.target.checked })} className="accent-[#c9b77a]" />
-        Show Listen button
-      </label>
+      <AudioUploadField value={form.audioPath} onChange={audioPath => onChange({ ...form, audioPath })} />
       <FormActions onSave={onSave} onCancel={onCancel} saving={saving} label={label} />
     </div>
   );
@@ -597,6 +594,81 @@ function ImageUploadField({ value, onChange }: { value: string; onChange: (url: 
           data-testid="input-gallery-src"
         />
       </div>
+    </div>
+  );
+}
+
+function AudioUploadField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const BASE = import.meta.env.BASE_URL;
+
+  const upload = async (file: File) => {
+    setUploading(true); setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
+      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
+      const { url } = await res.json() as { url: string };
+      onChange(url);
+    } catch { setError("Upload failed — check connection"); }
+    finally { setUploading(false); }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) upload(file);
+  };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) upload(file);
+  };
+
+  const filename = value ? value.split("/").pop() : null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Audio File</label>
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById("track-audio-input")?.click()}
+        className={`border-2 border-dashed transition-colors duration-300 cursor-pointer flex items-center justify-center gap-3 h-16 px-4 ${
+          dragging ? "border-[#c9b77a]/60 bg-[#c9b77a]/5" : value ? "border-[#c9b77a]/40" : "border-[#c9b77a]/20 hover:border-[#c9b77a]/40"
+        }`}
+      >
+        {uploading ? (
+          <>
+            <svg className="animate-spin w-4 h-4 text-[#c9b77a]/50" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            <span className="text-[9px] tracking-widest uppercase text-[#c9b77a]/50">Uploading…</span>
+          </>
+        ) : value ? (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-[#c9b77a]/60 shrink-0"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            <span className="text-[9px] tracking-[0.15em] text-[#c9b77a]/70 truncate max-w-xs">{filename}</span>
+            <span className="text-[8px] text-[#c9b77a]/30 uppercase tracking-wider shrink-0">— click to replace</span>
+          </>
+        ) : (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[#c9b77a]/30"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+            <span className="text-[9px] tracking-widest uppercase text-[#c9b77a]/30">Drop audio or click to browse</span>
+            <span className="text-[8px] text-[#c9b77a]/20">MP3, WAV, OGG, AAC — max 100 MB</span>
+          </>
+        )}
+        <input id="track-audio-input" type="file" accept="audio/*" className="hidden" onChange={handleFile} data-testid="track-audio-input" />
+      </div>
+      {error && <p className="text-[9px] text-red-400/70 tracking-wider">{error}</p>}
+      {value && (
+        <div className="flex items-center gap-3">
+          <audio controls src={value} className="h-8 flex-1 opacity-70" style={{ filter: "sepia(1) saturate(0.3) hue-rotate(10deg)" }} />
+          <button onClick={() => onChange("")} className="text-[8px] tracking-wider uppercase text-[#c9b77a]/30 hover:text-red-400/60 transition-colors">Remove</button>
+        </div>
+      )}
     </div>
   );
 }

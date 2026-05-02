@@ -17,6 +17,8 @@ export interface Track {
   description: string;
   /** @nullable */
   imagePath: string | null;
+  /** @nullable */
+  audioPath: string | null;
   hasListen: boolean;
   published: boolean;
   sortOrder: number;
@@ -31,6 +33,8 @@ export interface CreateTrackBody {
   description: string;
   /** @nullable */
   imagePath?: string | null;
+  /** @nullable */
+  audioPath?: string | null;
   hasListen?: boolean;
   published?: boolean;
   sortOrder?: number;
@@ -43,6 +47,8 @@ export interface UpdateTrackBody {
   description?: string;
   /** @nullable */
   imagePath?: string | null;
+  /** @nullable */
+  audioPath?: string | null;
   hasListen?: boolean;
   published?: boolean;
   sortOrder?: number;
