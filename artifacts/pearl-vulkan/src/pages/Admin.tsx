@@ -451,14 +451,21 @@ type PoemBlock =
   | { type: "text"; value: string }
   | { type: "image"; src: string; caption: string }
   | { type: "video"; src: string; caption: string };
+
+type PoemBlockWithId = PoemBlock & { _id: string };
+
+let _blkSeq = 0;
+const withBlockId = (b: PoemBlock): PoemBlockWithId => ({ ...b, _id: `blk-${++_blkSeq}-${Date.now()}` });
+
 function parsePoemBlocks(content: string): PoemBlock[] {
   try { const p = JSON.parse(content); if (Array.isArray(p)) return p as PoemBlock[]; } catch {}
   return [{ type: "text", value: content }];
 }
-function blocksToContent(blocks: PoemBlock[]): string {
-  const isRich = blocks.some(b => b.type === "image" || b.type === "video");
-  if (!isRich && blocks.length === 1 && blocks[0].type === "text") return blocks[0].value;
-  return JSON.stringify(blocks);
+function blocksToContent(blocks: PoemBlockWithId[]): string {
+  const clean: PoemBlock[] = blocks.map(({ _id: _discarded, ...b }) => b as PoemBlock);
+  const isRich = clean.some(b => b.type === "image" || b.type === "video");
+  if (!isRich && clean.length === 1 && clean[0].type === "text") return (clean[0] as Extract<PoemBlock, { type: "text" }>).value;
+  return JSON.stringify(clean);
 }
 
 function SortableTrackRow({ track, isEditing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onTogglePublish, saving }: {
@@ -607,19 +614,30 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
   form: { title: string; content: string; tags: string };
   onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
-  const [blocks, setBlocks] = useState<PoemBlock[]>(() => parsePoemBlocks(form.content));
+  const [blocks, setBlocks] = useState<PoemBlockWithId[]>(() =>
+    parsePoemBlocks(form.content).map(withBlockId)
+  );
 
-  const updateBlocks = (next: PoemBlock[]) => {
+  const blockSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const updateBlocks = (next: PoemBlockWithId[]) => {
     setBlocks(next);
     onChange({ ...form, content: blocksToContent(next) });
   };
 
-  const addText = () => updateBlocks([...blocks, { type: "text", value: "" }]);
-  const addImage = () => updateBlocks([...blocks, { type: "image", src: "", caption: "" }]);
-  const addVideo = () => updateBlocks([...blocks, { type: "video", src: "", caption: "" }]);
-  const removeBlock = (i: number) => updateBlocks(blocks.filter((_, idx) => idx !== i));
-  const moveUp = (i: number) => { if (i === 0) return; const b = [...blocks]; [b[i - 1], b[i]] = [b[i], b[i - 1]]; updateBlocks(b); };
-  const moveDown = (i: number) => { if (i === blocks.length - 1) return; const b = [...blocks]; [b[i], b[i + 1]] = [b[i + 1], b[i]]; updateBlocks(b); };
+  const addText  = () => updateBlocks([...blocks, withBlockId({ type: "text",  value: "" })]);
+  const addImage = () => updateBlocks([...blocks, withBlockId({ type: "image", src: "", caption: "" })]);
+  const addVideo = () => updateBlocks([...blocks, withBlockId({ type: "video", src: "", caption: "" })]);
+
+  const removeBlock = (id: string) => updateBlocks(blocks.filter(b => b._id !== id));
+
+  const handleBlockDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = blocks.findIndex(b => b._id === active.id);
+    const newIdx = blocks.findIndex(b => b._id === over.id);
+    updateBlocks(arrayMove(blocks, oldIdx, newIdx));
+  };
 
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-5 bg-[#161515]">
@@ -629,66 +647,122 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Content Blocks</label>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/50 uppercase">Content Blocks</label>
+            <span className="text-[8px] text-[#c9b77a]/25 tracking-wider">drag to reorder blocks</span>
+          </div>
           <div className="flex gap-2">
-            <button type="button" onClick={addText} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
+            <button type="button" onClick={addText}  className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
             <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
             <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {blocks.map((block, i) => (
-            <div key={i} className="flex gap-2 items-start">
-              <div className="flex flex-col gap-1 shrink-0 pt-1">
-                <button type="button" onClick={() => moveUp(i)} disabled={i === 0} className="text-[#c9b77a]/25 hover:text-[#c9b77a]/60 disabled:opacity-10 text-[10px] leading-none">▲</button>
-                <button type="button" onClick={() => moveDown(i)} disabled={i === blocks.length - 1} className="text-[#c9b77a]/25 hover:text-[#c9b77a]/60 disabled:opacity-10 text-[10px] leading-none">▼</button>
-              </div>
-
-              <div className="flex-1 border border-[#c9b77a]/10 p-3 flex flex-col gap-2 bg-[#131212]">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[8px] tracking-[0.2em] text-[#c9b77a]/30 uppercase">{block.type === "text" ? "Text Block" : block.type === "image" ? "Image Block" : "Video Block"}</span>
-                  <span className="flex-1" />
-                  <button type="button" onClick={() => removeBlock(i)} className="text-[8px] tracking-widest text-red-400/40 hover:text-red-400/80 uppercase">Remove</button>
-                </div>
-
-                {block.type === "text" ? (
-                  <textarea
-                    className="admin-input h-28 resize-y font-serif text-sm"
-                    value={block.value}
-                    placeholder="Poem lines…"
-                    onChange={e => {
-                      const next = [...blocks];
-                      next[i] = { type: "text", value: e.target.value };
-                      updateBlocks(next);
-                    }}
-                  />
-                ) : block.type === "image" ? (
-                  <PoemImageBlock
-                    blockIndex={i}
-                    src={block.src}
-                    caption={block.caption}
-                    onChangeSrc={src => { const next = [...blocks]; next[i] = { ...block, src }; updateBlocks(next); }}
-                    onChangeCaption={caption => { const next = [...blocks]; next[i] = { ...block, caption }; updateBlocks(next); }}
-                  />
-                ) : (
-                  <PoemVideoBlock
-                    src={block.src}
-                    caption={block.caption}
-                    onChangeSrc={src => { const next = [...blocks]; next[i] = { ...block, src }; updateBlocks(next); }}
-                    onChangeCaption={caption => { const next = [...blocks]; next[i] = { ...block, caption }; updateBlocks(next); }}
-                  />
-                )}
-              </div>
+        <DndContext sensors={blockSensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
+          <SortableContext items={blocks.map(b => b._id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-3">
+              {blocks.map((block, i) => (
+                <SortableBlockRow
+                  key={block._id}
+                  block={block}
+                  index={i}
+                  onRemove={() => removeBlock(block._id)}
+                  onUpdate={(updated) => {
+                    const next = [...blocks];
+                    next[i] = { ...updated, _id: block._id };
+                    updateBlocks(next);
+                  }}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
+
+        {blocks.length === 0 && (
+          <div className="border border-dashed border-[#c9b77a]/10 py-8 flex items-center justify-center">
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, or video above</span>
+          </div>
+        )}
       </div>
 
       <Field label="Tags (comma separated)">
         <input data-testid="input-poem-tags" className="admin-input" value={form.tags} onChange={e => onChange({ ...form, tags: e.target.value })} placeholder="POETRY, UKRAINIAN, VULCANSALUT" />
       </Field>
       <FormActions onSave={onSave} onCancel={onCancel} saving={saving} label={label} />
+    </div>
+  );
+}
+
+function SortableBlockRow({ block, index, onRemove, onUpdate }: {
+  block: PoemBlockWithId;
+  index: number;
+  onRemove: () => void;
+  onUpdate: (b: PoemBlock) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block._id });
+
+  const BLOCK_LABELS: Record<string, string> = { text: "Text Block", image: "Image Block", video: "Video Block" };
+  const BLOCK_COLORS: Record<string, string> = {
+    text:  "text-[#c9b77a]/30",
+    image: "text-sky-400/50",
+    video: "text-violet-400/50",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="flex gap-0 items-stretch border border-[#c9b77a]/10 bg-[#131212]"
+    >
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        title="Drag to reorder"
+        className="cursor-grab active:cursor-grabbing text-[#c9b77a]/20 hover:text-[#c9b77a]/50 hover:bg-[#c9b77a]/5 transition-colors select-none flex items-center justify-center w-7 shrink-0 border-r border-[#c9b77a]/10"
+      >
+        <svg width="10" height="16" viewBox="0 0 12 20" fill="currentColor">
+          <circle cx="3" cy="4"  r="1.5"/><circle cx="9" cy="4"  r="1.5"/>
+          <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+          <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
+        </svg>
+      </div>
+
+      {/* Block content */}
+      <div className="flex-1 p-3 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <span className={`text-[8px] tracking-[0.2em] uppercase font-medium ${BLOCK_COLORS[block.type]}`}>
+            {BLOCK_LABELS[block.type]}
+          </span>
+          <span className="text-[8px] text-[#c9b77a]/15 tracking-wider">#{index + 1}</span>
+          <span className="flex-1" />
+          <button type="button" onClick={onRemove} className="text-[8px] tracking-widest text-red-400/40 hover:text-red-400/80 uppercase transition-colors">Remove</button>
+        </div>
+
+        {block.type === "text" ? (
+          <textarea
+            className="admin-input h-28 resize-y font-serif text-sm"
+            value={block.value}
+            placeholder="Poem lines…"
+            onChange={e => onUpdate({ type: "text", value: e.target.value })}
+          />
+        ) : block.type === "image" ? (
+          <PoemImageBlock
+            blockIndex={index}
+            src={block.src}
+            caption={block.caption}
+            onChangeSrc={src => onUpdate({ ...block, src })}
+            onChangeCaption={caption => onUpdate({ ...block, caption })}
+          />
+        ) : (
+          <PoemVideoBlock
+            src={block.src}
+            caption={block.caption}
+            onChangeSrc={src => onUpdate({ ...block, src })}
+            onChangeCaption={caption => onUpdate({ ...block, caption })}
+          />
+        )}
+      </div>
     </div>
   );
 }
