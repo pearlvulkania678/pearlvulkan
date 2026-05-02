@@ -105,7 +105,7 @@ export default function See() {
                               <img
                                 src={block.src}
                                 alt={block.caption ?? ""}
-                                className="w-full object-cover grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition-all duration-700"
+                                className="w-full object-cover opacity-80 hover:opacity-100 transition-all duration-700"
                                 style={{ maxHeight: "480px", objectFit: "cover" }}
                               />
                               {block.caption && (
@@ -202,7 +202,7 @@ export default function See() {
                     <img
                       src={img.src}
                       alt={img.caption}
-                      className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out grayscale-[50%] group-hover:grayscale-0"
+                      className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-1000 ease-out"
                     />
                   </div>
                   <div className="font-sans text-[10px] tracking-[0.3em] text-muted-foreground uppercase">

@@ -95,7 +95,7 @@ export default function Read() {
                           <img
                             src={block.src}
                             alt={block.caption ?? ""}
-                            className="w-full object-cover grayscale opacity-80 hover:opacity-100 hover:grayscale-0 transition-all duration-700"
+                            className="w-full object-cover opacity-80 hover:opacity-100 transition-all duration-700"
                             style={{ maxHeight: "480px", objectFit: "cover" }}
                           />
                           {block.caption && (

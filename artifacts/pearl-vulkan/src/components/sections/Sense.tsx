@@ -122,7 +122,7 @@ export default function Sense() {
                     <img
                       src={item.imagePath}
                       alt={item.title}
-                      className="w-full h-full object-cover grayscale opacity-70 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-1000"
+                      className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all duration-1000"
                     />
                   </div>
                 )}

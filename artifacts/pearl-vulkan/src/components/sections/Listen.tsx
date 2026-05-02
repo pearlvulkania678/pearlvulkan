@@ -119,7 +119,7 @@ export default function Listen() {
                     <img
                       src={track.imagePath}
                       alt={track.title}
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700 mix-blend-luminosity grayscale group-hover:grayscale-0 group-hover:mix-blend-normal"
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
                     />
                   ) : track.soundcloudUrl ? (
                     <SoundCloudArtwork url={track.soundcloudUrl} title={track.title} />

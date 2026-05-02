@@ -81,7 +81,7 @@ export default function Touch() {
                   <img
                     src={item.imagePath}
                     alt={item.title}
-                    className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 scale-105 group-hover:scale-100 transition-all duration-1000 ease-out"
+                    className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-all duration-1000 ease-out"
                   />
                   <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 mix-blend-color" />
                 </div>

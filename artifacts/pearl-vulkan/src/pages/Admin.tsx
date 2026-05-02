@@ -605,7 +605,7 @@ function SortableGalleryRow({ item, isEditing, form, onFormChange, onSave, onCan
         ) : (
           <div className="flex items-center gap-4">
             <div className={`w-20 h-16 overflow-hidden bg-[#1a1919] shrink-0 ${!item.published ? "opacity-30" : ""}`}>
-              <img src={item.src} alt={item.caption} className="w-full h-full object-cover grayscale" />
+              <img src={item.src} alt={item.caption} className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-1">
               <span className={`text-[9px] tracking-[0.25em] uppercase ${item.published ? "text-[#c9b77a]/60" : "text-[#c9b77a]/25"}`}>{item.caption}</span>
@@ -880,7 +880,7 @@ function PoemImageBlock({ blockIndex, src, caption, onChangeSrc, onChangeCaption
           dragging ? "border-[#c9b77a]/60 bg-[#c9b77a]/5" : "border-[#c9b77a]/20 hover:border-[#c9b77a]/40"
         } ${src ? "h-32" : "h-20"}`}
       >
-        {src && <img src={src} alt="preview" className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale" />}
+        {src && <img src={src} alt="preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />}
         <div className="relative z-10 text-center pointer-events-none">
           {uploading ? (
             <span className="text-[9px] tracking-widest text-[#c9b77a]/60 uppercase">Uploading…</span>
@@ -1008,7 +1008,7 @@ function ImageUploadField({ value, onChange, inputId = "gallery-file-input" }: {
         } ${value ? "h-40" : "h-28"}`}
       >
         {value && (
-          <img src={value} alt="preview" className="absolute inset-0 w-full h-full object-cover opacity-40 grayscale" />
+          <img src={value} alt="preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
         )}
         <div className={`relative z-10 flex flex-col items-center gap-1 pointer-events-none ${value ? "text-[#c9b77a]/80" : "text-[#c9b77a]/30"}`}>
           {uploading ? (
@@ -1343,7 +1343,7 @@ function SortableTouchRow({ item, onEdit, onDelete, onToggle, editing }: { item:
   return (
     <div ref={setNodeRef} style={style} className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
       <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
-      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover grayscale opacity-50 shrink-0" />}
+      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover opacity-80 shrink-0" />}
       <div className="flex-1 min-w-0">
         <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80 truncate">{item.title}</p>
         {item.subtitle && <p className="text-[9px] text-[#c9b77a]/40 tracking-wider truncate">{item.subtitle}</p>}
@@ -1472,7 +1472,7 @@ function SortableSenseRow({ item, onEdit, onDelete, onToggle, editing }: { item:
   return (
     <div ref={setNodeRef} style={style} className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
       <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
-      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover grayscale opacity-50 shrink-0" />}
+      {item.imagePath && <img src={item.imagePath} alt="" className="w-10 h-10 object-cover opacity-80 shrink-0" />}
       <div className="flex-1 min-w-0">
         <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80 truncate">{item.title}</p>
         <p className="text-[9px] text-[#c9b77a]/40 tracking-wider">{[item.date, item.location].filter(Boolean).join(" · ")}</p>
