@@ -670,7 +670,8 @@ type PoemFormState  = { title: string; content: string; tags: string };
 type PoemBlock =
   | { type: "text"; value: string }
   | { type: "image"; src: string; caption: string }
-  | { type: "video"; src: string; caption: string };
+  | { type: "video"; src: string; caption: string }
+  | { type: "audio"; src: string };
 
 type PoemBlockWithId = PoemBlock & { _id: string };
 
@@ -683,7 +684,7 @@ function parsePoemBlocks(content: string): PoemBlock[] {
 }
 function blocksToContent(blocks: PoemBlockWithId[]): string {
   const clean: PoemBlock[] = blocks.map(({ _id: _discarded, ...b }) => b as PoemBlock);
-  const isRich = clean.some(b => b.type === "image" || b.type === "video");
+  const isRich = clean.some(b => b.type === "image" || b.type === "video" || b.type === "audio");
   if (!isRich && clean.length === 1 && clean[0].type === "text") return (clean[0] as Extract<PoemBlock, { type: "text" }>).value;
   return JSON.stringify(clean);
 }
@@ -882,6 +883,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
   const addText  = () => updateBlocks([...blocks, withBlockId({ type: "text",  value: "" })]);
   const addImage = () => updateBlocks([...blocks, withBlockId({ type: "image", src: "", caption: "" })]);
   const addVideo = () => updateBlocks([...blocks, withBlockId({ type: "video", src: "", caption: "" })]);
+  const addAudio = () => updateBlocks([...blocks, withBlockId({ type: "audio", src: "" })]);
 
   const removeBlock = (id: string) => updateBlocks(blocks.filter(b => b._id !== id));
 
@@ -909,6 +911,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
             <button type="button" onClick={addText}  className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
             <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
             <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
+            <button type="button" onClick={addAudio} className="text-[8px] tracking-widest text-emerald-400/40 border border-emerald-400/20 px-3 py-1 hover:border-emerald-400/50 hover:text-emerald-400 transition-colors uppercase">+ Audio</button>
           </div>
         </div>
 
@@ -934,7 +937,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
 
         {blocks.length === 0 && (
           <div className="border border-dashed border-[#c9b77a]/10 py-8 flex items-center justify-center">
-            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, or video above</span>
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, video, or audio above</span>
           </div>
         )}
       </div>
@@ -955,11 +958,12 @@ function SortableBlockRow({ block, index, onRemove, onUpdate }: {
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block._id });
 
-  const BLOCK_LABELS: Record<string, string> = { text: "Text Block", image: "Image Block", video: "Video Block" };
+  const BLOCK_LABELS: Record<string, string> = { text: "Text Block", image: "Image Block", video: "Video Block", audio: "Audio Block" };
   const BLOCK_COLORS: Record<string, string> = {
     text:  "text-[#c9b77a]/30",
     image: "text-sky-400/50",
     video: "text-violet-400/50",
+    audio: "text-emerald-400/50",
   };
 
   return (
@@ -1007,6 +1011,12 @@ function SortableBlockRow({ block, index, onRemove, onUpdate }: {
             caption={block.caption}
             onChangeSrc={src => onUpdate({ ...block, src })}
             onChangeCaption={caption => onUpdate({ ...block, caption })}
+          />
+        ) : block.type === "audio" ? (
+          <AudioBlock
+            blockIndex={index}
+            src={block.src}
+            onChangeSrc={src => onUpdate({ type: "audio", src })}
           />
         ) : (
           <PoemVideoBlock
@@ -1111,6 +1121,56 @@ function PoemVideoBlock({ src, caption, onChangeSrc, onChangeCaption }: {
         onChange={e => onChangeCaption(e.target.value)}
         placeholder="Caption (optional)"
       />
+    </div>
+  );
+}
+
+function AudioBlock({ blockIndex, src, onChangeSrc }: {
+  blockIndex: number; src: string;
+  onChangeSrc: (src: string) => void;
+}) {
+  const uid = useId();
+  const inputId = `audio-blk-${uid}-${blockIndex}`;
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const BASE = import.meta.env.BASE_URL;
+
+  const upload = async (file: File) => {
+    setUploading(true); setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
+      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
+      const { url } = await res.json() as { url: string };
+      onChangeSrc(url);
+    } catch { setError("Upload failed"); }
+    finally { setUploading(false); }
+  };
+
+  const filename = src ? src.split("/").pop() ?? src : "";
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        onClick={() => document.getElementById(inputId)?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) upload(f); }}
+        className="border-2 border-dashed border-[#c9b77a]/20 hover:border-[#c9b77a]/40 cursor-pointer flex items-center justify-center h-14 transition-colors duration-300"
+      >
+        <span className="text-[9px] tracking-widest text-[#c9b77a]/40 uppercase">
+          {uploading ? "Uploading…" : src ? `♪ ${filename}` : "Drop audio file or click to browse"}
+        </span>
+        <input id={inputId} type="file" accept="audio/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} />
+      </div>
+      {error && <p className="text-[9px] text-red-400/70">{error}</p>}
+      <div className="flex gap-2 items-center">
+        <span className="text-[8px] text-[#c9b77a]/30 uppercase tracking-widest shrink-0">Or URL</span>
+        <input className="admin-input text-xs" value={src} onChange={e => onChangeSrc(e.target.value)} placeholder="/uploads/track.mp3 or https://…" />
+      </div>
+      {src && (
+        <audio src={src} controls className="w-full h-8 opacity-70" />
+      )}
     </div>
   );
 }
@@ -1521,6 +1581,7 @@ function TouchForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form:
   const addText  = () => updateBlocks([...blocks, withBlockId({ type: "text",  value: "" })]);
   const addImage = () => updateBlocks([...blocks, withBlockId({ type: "image", src: "", caption: "" })]);
   const addVideo = () => updateBlocks([...blocks, withBlockId({ type: "video", src: "", caption: "" })]);
+  const addAudio = () => updateBlocks([...blocks, withBlockId({ type: "audio", src: "" })]);
   const removeBlock = (id: string) => updateBlocks(blocks.filter(b => b._id !== id));
 
   const handleBlockDragEnd = (event: DragEndEvent) => {
@@ -1549,6 +1610,7 @@ function TouchForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form:
             <button type="button" onClick={addText}  className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
             <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
             <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
+            <button type="button" onClick={addAudio} className="text-[8px] tracking-widest text-emerald-400/40 border border-emerald-400/20 px-3 py-1 hover:border-emerald-400/50 hover:text-emerald-400 transition-colors uppercase">+ Audio</button>
           </div>
         </div>
         <DndContext sensors={blockSensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
@@ -1565,7 +1627,7 @@ function TouchForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form:
         </DndContext>
         {blocks.length === 0 && (
           <div className="border border-dashed border-[#c9b77a]/10 py-8 flex items-center justify-center">
-            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, or video above</span>
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, video, or audio above</span>
           </div>
         )}
       </div>
@@ -1703,6 +1765,7 @@ function SenseForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form:
   const addText  = () => updateBlocks([...blocks, withBlockId({ type: "text",  value: "" })]);
   const addImage = () => updateBlocks([...blocks, withBlockId({ type: "image", src: "", caption: "" })]);
   const addVideo = () => updateBlocks([...blocks, withBlockId({ type: "video", src: "", caption: "" })]);
+  const addAudio = () => updateBlocks([...blocks, withBlockId({ type: "audio", src: "" })]);
   const removeBlock = (id: string) => updateBlocks(blocks.filter(b => b._id !== id));
 
   const handleBlockDragEnd = (event: DragEndEvent) => {
@@ -1732,6 +1795,7 @@ function SenseForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form:
             <button type="button" onClick={addText}  className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Text</button>
             <button type="button" onClick={addImage} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Image</button>
             <button type="button" onClick={addVideo} className="text-[8px] tracking-widest text-[#c9b77a]/50 border border-[#c9b77a]/20 px-3 py-1 hover:border-[#c9b77a]/50 hover:text-[#c9b77a] transition-colors uppercase">+ Video</button>
+            <button type="button" onClick={addAudio} className="text-[8px] tracking-widest text-emerald-400/40 border border-emerald-400/20 px-3 py-1 hover:border-emerald-400/50 hover:text-emerald-400 transition-colors uppercase">+ Audio</button>
           </div>
         </div>
         <DndContext sensors={blockSensors} collisionDetection={closestCenter} onDragEnd={handleBlockDragEnd}>
@@ -1748,7 +1812,7 @@ function SenseForm({ form, onChange, onSave, onCancel, saving, isEdit }: { form:
         </DndContext>
         {blocks.length === 0 && (
           <div className="border border-dashed border-[#c9b77a]/10 py-8 flex items-center justify-center">
-            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, or video above</span>
+            <span className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No blocks yet — add text, image, video, or audio above</span>
           </div>
         )}
       </div>

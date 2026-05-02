@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 export type ContentBlock =
   | { type: "text"; value: string }
   | { type: "image"; src: string; caption?: string }
-  | { type: "video"; src: string; caption?: string };
+  | { type: "video"; src: string; caption?: string }
+  | { type: "audio"; src: string };
 
 export function parseBlocks(content: string): ContentBlock[] {
   try {
@@ -91,6 +92,18 @@ export function BlockRenderer({ blocks, prose = true }: { blocks: ContentBlock[]
                 </figcaption>
               )}
             </motion.figure>
+          );
+        }
+        if (block.type === "audio") {
+          return (
+            <div key={bi} className="flex flex-col gap-2">
+              <audio
+                src={block.src}
+                controls
+                className="w-full opacity-80 hover:opacity-100 transition-opacity duration-500"
+                style={{ filter: "sepia(30%) hue-rotate(10deg)" }}
+              />
+            </div>
           );
         }
         return null;
