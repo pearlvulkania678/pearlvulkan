@@ -83,8 +83,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen text-foreground font-sans selection:bg-primary selection:text-primary-foreground relative overflow-x-hidden">
-      {/* Persistent background image */}
-      <StartBackground />
       {/* Background atmospheric grain */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-50 mix-blend-overlay" style={{ backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')" }}></div>
 
@@ -92,7 +90,8 @@ export default function Home() {
       <ScrollToTop />
 
       <main className="relative z-[1] pl-5 pr-8 md:pl-24 md:pr-48 max-w-7xl mx-auto flex flex-col">
-        <section id="start" className="min-h-screen flex items-center py-20 md:py-24">
+        <section id="start" className="relative overflow-hidden min-h-screen flex items-center py-20 md:py-24">
+          <StartBackground />
           <Start />
         </section>
 

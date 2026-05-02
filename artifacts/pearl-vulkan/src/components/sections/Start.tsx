@@ -36,7 +36,7 @@ export function StartBackground() {
     <>
       {/* Background image at controlled opacity */}
       <div
-        className="fixed inset-0 z-0 pointer-events-none"
+        className="absolute inset-0 z-0 pointer-events-none"
         style={{ opacity: (s.bgOpacity ?? 15) / 100 }}
       >
         <img
@@ -47,7 +47,7 @@ export function StartBackground() {
       </div>
       {/* Gradient fade — always fully opaque, independent of image opacity */}
       <div
-        className="fixed inset-x-0 bottom-0 z-0 pointer-events-none"
+        className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
         style={{
           height: "60vh",
           background: "linear-gradient(to bottom, transparent 0%, hsl(0, 0%, 10%) 100%)",
