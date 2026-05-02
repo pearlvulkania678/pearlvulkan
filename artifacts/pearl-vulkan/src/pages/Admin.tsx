@@ -36,7 +36,8 @@ const adminSenseKey = ["admin", "sense"] as const;
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
-type Tab = "tracks" | "poems" | "touch" | "sense" | "log";
+type Tab = "tracks" | "see" | "touch" | "sense" | "log";
+const TAB_LABELS: Record<Tab, string> = { tracks: "listen", see: "see", touch: "touch", sense: "sense", log: "log" };
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
 interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
@@ -139,10 +140,10 @@ function AdminPanel() {
         </div>
         <div className="flex items-center gap-8">
           <div className="flex gap-6 flex-wrap">
-            {(["tracks", "poems", "touch", "sense", "log"] as Tab[]).map(t => (
+            {(["tracks", "see", "touch", "sense", "log"] as Tab[]).map(t => (
               <button key={t} data-testid={`tab-${t}`} onClick={() => setTab(t)}
                 className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${tab === t ? "text-[#c9b77a] border-b border-[#c9b77a]" : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"}`}>
-                {t}
+                {TAB_LABELS[t]}
               </button>
             ))}
           </div>
@@ -154,7 +155,7 @@ function AdminPanel() {
       </div>
       <main className="px-8 py-10 max-w-4xl mx-auto">
         {tab === "tracks" && <TracksPanel />}
-        {tab === "poems"  && <PoemsPanel />}
+        {tab === "see"    && <PoemsPanel />}
         {tab === "touch"  && <TouchPanel />}
         {tab === "sense"   && <SensePanel />}
         {tab === "log"     && <ActivityPanel />}
@@ -1131,9 +1132,9 @@ function TouchPanel() {
     try {
       const body = { ...form, subtitle: form.subtitle || null, imagePath: form.imagePath || null, linkUrl: form.linkUrl || null };
       if (editing != null) {
-        await fetch(`${BASE}api/admin/touch/${editing}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        await fetch(`${BASE}api/touch/${editing}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       } else {
-        await fetch(`${BASE}api/admin/touch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        await fetch(`${BASE}api/touch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       }
       await invalidate();
       resetForm();
@@ -1142,12 +1143,12 @@ function TouchPanel() {
 
   const del = async (id: number) => {
     if (!confirm("Delete this touch item?")) return;
-    await fetch(`${BASE}api/admin/touch/${id}`, { method: "DELETE" });
+    await fetch(`${BASE}api/touch/${id}`, { method: "DELETE" });
     await invalidate();
   };
 
   const togglePublish = async (item: AdminTouch) => {
-    await fetch(`${BASE}api/admin/touch/${item.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) });
+    await fetch(`${BASE}api/touch/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ published: !item.published }) });
     await invalidate();
   };
 
@@ -1158,7 +1159,7 @@ function TouchPanel() {
     const newIdx = items.findIndex(i => String(i.id) === over.id);
     const reordered = arrayMove(items, oldIdx, newIdx);
     qc.setQueryData(adminTouchKey, reordered);
-    await fetch(`${BASE}api/admin/touch/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
+    await fetch(`${BASE}api/touch/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
     await invalidate();
   };
 
@@ -1260,9 +1261,9 @@ function SensePanel() {
     try {
       const body = { ...form, date: form.date || null, location: form.location || null, imagePath: form.imagePath || null, linkUrl: form.linkUrl || null };
       if (editing != null) {
-        await fetch(`${BASE}api/admin/sense/${editing}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        await fetch(`${BASE}api/sense/${editing}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       } else {
-        await fetch(`${BASE}api/admin/sense`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        await fetch(`${BASE}api/sense`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       }
       await invalidate();
       resetForm();
@@ -1271,12 +1272,12 @@ function SensePanel() {
 
   const del = async (id: number) => {
     if (!confirm("Delete this sense item?")) return;
-    await fetch(`${BASE}api/admin/sense/${id}`, { method: "DELETE" });
+    await fetch(`${BASE}api/sense/${id}`, { method: "DELETE" });
     await invalidate();
   };
 
   const togglePublish = async (item: AdminSense) => {
-    await fetch(`${BASE}api/admin/sense/${item.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...item, published: !item.published }) });
+    await fetch(`${BASE}api/sense/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ published: !item.published }) });
     await invalidate();
   };
 
@@ -1287,7 +1288,7 @@ function SensePanel() {
     const newIdx = items.findIndex(i => String(i.id) === over.id);
     const reordered = arrayMove(items, oldIdx, newIdx);
     qc.setQueryData(adminSenseKey, reordered);
-    await fetch(`${BASE}api/admin/sense/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
+    await fetch(`${BASE}api/sense/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
     await invalidate();
   };
 

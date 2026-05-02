@@ -62,4 +62,11 @@ router.delete("/touch/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
+router.post("/touch/reorder", async (req, res): Promise<void> => {
+  const { ids } = req.body as { ids: number[] };
+  if (!Array.isArray(ids)) { res.status(400).json({ error: "ids array required" }); return; }
+  await Promise.all(ids.map((id, i) => db.update(touchTable).set({ sortOrder: i }).where(eq(touchTable.id, id))));
+  res.json({ ok: true });
+});
+
 export default router;
