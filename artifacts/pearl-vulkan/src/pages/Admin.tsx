@@ -27,26 +27,29 @@ import {
   useCreateGalleryItem,
 } from "@workspace/api-client-react";
 
-const fetchAdminTouch = () => fetch(`${BASE}api/admin/touch`).then(r => r.json()) as Promise<AdminTouch[]>;
-const fetchAdminSense = () => fetch(`${BASE}api/admin/sense`).then(r => r.json()) as Promise<AdminSense[]>;
-const fetchAdminStart = () => fetch(`${BASE}api/admin/start`).then(r => r.json()) as Promise<AdminStart>;
+const fetchAdminTouch       = () => fetch(`${BASE}api/admin/touch`).then(r => r.json())        as Promise<AdminTouch[]>;
+const fetchAdminSense       = () => fetch(`${BASE}api/admin/sense`).then(r => r.json())        as Promise<AdminSense[]>;
+const fetchAdminStart       = () => fetch(`${BASE}api/admin/start`).then(r => r.json())        as Promise<AdminStart>;
+const fetchAdminSocialLinks = () => fetch(`${BASE}api/admin/social-links`).then(r => r.json()) as Promise<AdminSocialLink[]>;
 
-const adminTouchKey = ["admin", "touch"] as const;
-const adminSenseKey = ["admin", "sense"] as const;
-const adminStartKey = ["admin", "start"] as const;
+const adminTouchKey       = ["admin", "touch"]        as const;
+const adminSenseKey       = ["admin", "sense"]        as const;
+const adminStartKey       = ["admin", "start"]        as const;
+const adminSocialLinksKey = ["admin", "social-links"] as const;
 
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
-type Tab = "start" | "tracks" | "see" | "touch" | "sense" | "log";
-const TAB_LABELS: Record<Tab, string> = { start: "start", tracks: "listen", see: "see", touch: "touch", sense: "sense", log: "log" };
+type Tab = "start" | "tracks" | "see" | "touch" | "sense" | "links" | "log";
+const TAB_LABELS: Record<Tab, string> = { start: "start", tracks: "listen", see: "see", touch: "touch", sense: "sense", links: "links", log: "log" };
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
 interface AdminStart   { id: number; artistName: string; quote: string; tagline: string; backgroundImage: string | null; bgOpacity: number; }
 interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem    { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
 interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
-interface AdminSense   { id: number; title: string; date: string | null; location: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
+interface AdminSense       { id: number; title: string; date: string | null; location: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
+interface AdminSocialLink  { id: number; label: string; url: string; sortOrder: number; published: boolean; }
 
 // ─── Admin-specific fetchers (see all, incl. drafts) ────────────────────────
 const fetchAdminTracks = () => fetch(`${BASE}api/admin/tracks`).then(r => r.json()) as Promise<AdminTrack[]>;
@@ -143,7 +146,7 @@ function AdminPanel() {
         </div>
         <div className="flex items-center gap-8">
           <div className="flex gap-6 flex-wrap">
-            {(["start", "tracks", "see", "touch", "sense", "log"] as Tab[]).map(t => (
+            {(["start", "tracks", "see", "touch", "sense", "links", "log"] as Tab[]).map(t => (
               <button key={t} data-testid={`tab-${t}`} onClick={() => setTab(t)}
                 className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${tab === t ? "text-[#c9b77a] border-b border-[#c9b77a]" : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"}`}>
                 {TAB_LABELS[t]}
@@ -162,8 +165,173 @@ function AdminPanel() {
         {tab === "see"    && <PoemsPanel />}
         {tab === "touch"  && <TouchPanel />}
         {tab === "sense"   && <SensePanel />}
+        {tab === "links"   && <SocialLinksPanel />}
         {tab === "log"     && <ActivityPanel />}
       </main>
+    </div>
+  );
+}
+
+// ─── Social Links Panel ───────────────────────────────────────────────────────
+type LinkFormState = Omit<AdminSocialLink, "id">;
+
+function SortableLinkRow({ item, editing, form, onFormChange, onSave, onCancelEdit, onStartEdit, onDelete, onToggle, saving }: {
+  item: AdminSocialLink; editing: number | null; form: LinkFormState;
+  onFormChange: (f: LinkFormState) => void; onSave: () => void; onCancelEdit: () => void;
+  onStartEdit: () => void; onDelete: () => void; onToggle: () => void; saving: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(item.id) });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex flex-col">
+      <div className={`flex items-center gap-3 border p-3 transition-colors duration-200 ${editing === item.id ? "border-[#c9b77a]/50 bg-[#c9b77a]/5" : "border-[#c9b77a]/10 hover:border-[#c9b77a]/20 bg-[#161515]"}`}>
+        <span {...attributes} {...listeners} className="cursor-grab text-[#c9b77a]/20 hover:text-[#c9b77a]/50 select-none text-lg leading-none">⠿</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] tracking-widest uppercase text-[#c9b77a]/80">{item.label}</p>
+          <p className="text-[9px] text-[#c9b77a]/30 tracking-wider truncate">{item.url}</p>
+        </div>
+        <span className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 shrink-0 ${item.published ? "text-[#c9b77a]/60 border-[#c9b77a]/20" : "text-[#c9b77a]/25 border-[#c9b77a]/10"}`}>{item.published ? "Live" : "Draft"}</span>
+        <button onClick={onToggle}     className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2 shrink-0">Toggle</button>
+        <button onClick={onStartEdit}  className="text-[8px] tracking-widest uppercase text-[#c9b77a]/30 hover:text-[#c9b77a] transition-colors px-2 shrink-0">Edit</button>
+        <button onClick={onDelete}     className="text-[8px] tracking-widest uppercase text-red-400/30 hover:text-red-400/70 transition-colors px-2 shrink-0">Del</button>
+      </div>
+      {editing === item.id && (
+        <div className="border border-t-0 border-[#c9b77a]/30 p-4 flex flex-col gap-4 bg-[#161515]">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Label"><input className="admin-input" value={form.label} onChange={e => onFormChange({ ...form, label: e.target.value })} placeholder="Instagram" /></Field>
+            <Field label="URL"><input className="admin-input" value={form.url} onChange={e => onFormChange({ ...form, url: e.target.value })} placeholder="https://..." /></Field>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => onFormChange({ ...form, published: !form.published })} className={`w-8 h-4 rounded-full transition-colors duration-300 ${form.published ? "bg-[#c9b77a]/60" : "bg-[#c9b77a]/10"}`}>
+                <div className={`w-4 h-4 rounded-full bg-[#c9b77a] transition-transform duration-300 shadow ${form.published ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+              <span className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/50">{form.published ? "Published" : "Draft"}</span>
+            </label>
+            <div className="flex-1" />
+            <button onClick={onCancelEdit} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors px-4 py-2">Cancel</button>
+            <button onClick={onSave} disabled={saving || !form.label || !form.url} className="text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/40 text-[#c9b77a]/70 hover:text-[#c9b77a] hover:border-[#c9b77a] transition-colors px-6 py-2 disabled:opacity-40">
+              {saving ? "Saving…" : "Update"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SocialLinksPanel() {
+  const qc = useQueryClient();
+  const { data: items = [], isLoading } = useQuery<AdminSocialLink[]>({ queryKey: adminSocialLinksKey, queryFn: fetchAdminSocialLinks });
+  const [editing, setEditing] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<LinkFormState>({ label: "", url: "", sortOrder: 0, published: true });
+  const [saving, setSaving] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: adminSocialLinksKey });
+  const resetForm  = () => { setForm({ label: "", url: "", sortOrder: 0, published: true }); setAdding(false); setEditing(null); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      if (editing !== null) {
+        await fetch(`${BASE}api/social-links/${editing}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      } else {
+        await fetch(`${BASE}api/social-links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, sortOrder: items.length }) });
+      }
+      await invalidate();
+      resetForm();
+    } finally { setSaving(false); }
+  };
+
+  const del = async (id: number) => {
+    if (!confirm("Delete this link?")) return;
+    await fetch(`${BASE}api/social-links/${id}`, { method: "DELETE" });
+    await invalidate();
+  };
+
+  const toggle = async (item: AdminSocialLink) => {
+    await fetch(`${BASE}api/social-links/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ published: !item.published }) });
+    await invalidate();
+  };
+
+  const startEdit = (item: AdminSocialLink) => {
+    setForm({ label: item.label, url: item.url, sortOrder: item.sortOrder, published: item.published });
+    setEditing(item.id); setAdding(false);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = items.findIndex(i => String(i.id) === active.id);
+    const newIdx = items.findIndex(i => String(i.id) === over.id);
+    const reordered = arrayMove(items, oldIdx, newIdx);
+    await fetch(`${BASE}api/social-links/reorder`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: reordered.map(i => i.id) }) });
+    await invalidate();
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-serif text-xl tracking-widest uppercase text-[#c9b77a]">Links</h2>
+          <p className="text-[9px] tracking-[0.2em] text-[#c9b77a]/30 uppercase mt-1">Footer social &amp; contact links</p>
+        </div>
+        <button onClick={() => { setAdding(true); setEditing(null); }} className="btn-admin">+ Add Link</button>
+      </div>
+
+      {adding && (
+        <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Label"><input className="admin-input" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="Instagram" autoFocus /></Field>
+            <Field label="URL"><input className="admin-input" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://instagram.com/..." /></Field>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div onClick={() => setForm(f => ({ ...f, published: !f.published }))} className={`w-8 h-4 rounded-full transition-colors duration-300 ${form.published ? "bg-[#c9b77a]/60" : "bg-[#c9b77a]/10"}`}>
+                <div className={`w-4 h-4 rounded-full bg-[#c9b77a] transition-transform duration-300 shadow ${form.published ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+              <span className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/50">{form.published ? "Published" : "Draft"}</span>
+            </label>
+            <div className="flex-1" />
+            <button onClick={resetForm} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors px-4 py-2">Cancel</button>
+            <button onClick={save} disabled={saving || !form.label || !form.url} className="text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/40 text-[#c9b77a]/70 hover:text-[#c9b77a] hover:border-[#c9b77a] transition-colors px-6 py-2 disabled:opacity-40">
+              {saving ? "Saving…" : "Create"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="text-[#c9b77a]/20 text-[9px] tracking-widest uppercase animate-pulse py-4">Loading…</div>
+      ) : items.length === 0 && !adding ? (
+        <div className="border border-dashed border-[#c9b77a]/10 py-12 text-center">
+          <p className="text-[9px] tracking-widest text-[#c9b77a]/20 uppercase">No links yet — add one above</p>
+        </div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={items.map(i => String(i.id))} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-2">
+              {items.map(item => (
+                <SortableLinkRow
+                  key={item.id}
+                  item={item}
+                  editing={editing}
+                  form={form}
+                  onFormChange={setForm}
+                  onSave={save}
+                  onCancelEdit={resetForm}
+                  onStartEdit={() => startEdit(item)}
+                  onDelete={() => del(item.id)}
+                  onToggle={() => toggle(item)}
+                  saving={saving}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   );
 }

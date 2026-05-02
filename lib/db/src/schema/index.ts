@@ -5,3 +5,4 @@ export * from "./activity-log";
 export * from "./touch";
 export * from "./sense";
 export * from "./start";
+export * from "./social-links";

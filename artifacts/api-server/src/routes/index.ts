@@ -9,6 +9,7 @@ import adminAuthRouter from "./admin-auth";
 import uploadRouter from "./upload";
 import activityRouter from "./activity";
 import startRouter from "./start";
+import socialLinksRouter from "./social-links";
 
 const router: IRouter = Router();
 
@@ -16,6 +17,7 @@ router.use(healthRouter);
 router.use(adminAuthRouter);
 router.use(uploadRouter);
 router.use(startRouter);
+router.use(socialLinksRouter);
 router.use(tracksRouter);
 router.use(poemsRouter);
 router.use(galleryRouter);
