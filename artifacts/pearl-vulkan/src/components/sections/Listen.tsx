@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useListTracks } from "@workspace/api-client-react";
 
 export default function Listen() {
@@ -8,6 +8,7 @@ export default function Listen() {
   const [playing, setPlaying] = useState<number | null>(null);
   const [playError, setPlayError] = useState<number | null>(null);
   const [scExpanded, setScExpanded] = useState<number | null>(null);
+  const [scAutoplay, setScAutoplay] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const genres = ["ALL MUSIC", ...Array.from(new Set(tracks.map((t) => t.genre)))];
@@ -21,25 +22,34 @@ export default function Listen() {
       setPlaying(null);
       return;
     }
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    if (audioRef.current) audioRef.current.pause();
     const audio = new Audio(audioPath);
     audioRef.current = audio;
-    audio.play().catch(() => {
-      setPlaying(null);
-      setPlayError(trackId);
-    });
-    audio.onerror = () => {
-      setPlaying(null);
-      setPlayError(trackId);
-    };
+    audio.play().catch(() => { setPlaying(null); setPlayError(trackId); });
+    audio.onerror = () => { setPlaying(null); setPlayError(trackId); };
     audio.onended = () => setPlaying(null);
     setPlaying(trackId);
   };
 
+  const handleScPlay = (trackId: number) => {
+    if (scExpanded === trackId) {
+      setScExpanded(null);
+      setScAutoplay(false);
+    } else {
+      if (audioRef.current) { audioRef.current.pause(); setPlaying(null); }
+      setScExpanded(trackId);
+      setScAutoplay(true);
+    }
+  };
+
   const toggleSoundCloud = (trackId: number) => {
-    setScExpanded(prev => prev === trackId ? null : trackId);
+    if (scExpanded === trackId) {
+      setScExpanded(null);
+      setScAutoplay(false);
+    } else {
+      setScExpanded(trackId);
+      setScAutoplay(false);
+    }
   };
 
   return (
@@ -91,6 +101,7 @@ export default function Listen() {
             const hasAudio = !!track.audioPath;
             const hasSoundCloud = !!track.soundcloudUrl;
             const isScOpen = scExpanded === track.id;
+            const isScPlaying = isScOpen && scAutoplay;
 
             return (
               <motion.div
@@ -110,13 +121,17 @@ export default function Listen() {
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700 mix-blend-luminosity grayscale group-hover:grayscale-0 group-hover:mix-blend-normal"
                     />
                   )}
-                  {hasAudio && (
+                  {(hasAudio || (!hasAudio && hasSoundCloud)) && (
                     <button
-                      onClick={() => handlePlay(track.id, track.audioPath ?? null)}
-                      aria-label={isPlaying ? "Pause" : "Play"}
+                      onClick={() =>
+                        hasAudio
+                          ? handlePlay(track.id, track.audioPath ?? null)
+                          : handleScPlay(track.id)
+                      }
+                      aria-label={isPlaying || isScPlaying ? "Pause" : "Play"}
                       className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                     >
-                      {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                      {isPlaying || isScPlaying ? <PauseIcon /> : <PlayIcon />}
                     </button>
                   )}
                 </div>
@@ -131,9 +146,7 @@ export default function Listen() {
                     {track.description}
                   </p>
 
-                  {isPlaying && (
-                    <WaveformBars />
-                  )}
+                  {(isPlaying || isScPlaying) && <WaveformBars />}
 
                   <div className="flex flex-wrap gap-3 mt-4">
                     {hasAudio && (
@@ -146,15 +159,25 @@ export default function Listen() {
                             : "text-primary border-primary/30 hover:bg-primary hover:text-primary-foreground"
                         }`}
                       >
-                        {isPlaying ? (
-                          <><PauseIcon small /> Now Playing</>
-                        ) : (
-                          <><PlayIcon small /> Listen</>
-                        )}
+                        {isPlaying ? <><PauseIcon small /> Now Playing</> : <><PlayIcon small /> Listen</>}
                       </button>
                     )}
 
-                    {hasSoundCloud && (
+                    {!hasAudio && hasSoundCloud && (
+                      <button
+                        data-testid={`listen-btn-${track.id}`}
+                        onClick={() => handleScPlay(track.id)}
+                        className={`self-start flex items-center gap-3 text-xs font-sans tracking-[0.2em] border px-6 py-2 transition-all duration-500 uppercase ${
+                          isScPlaying
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "text-primary border-primary/30 hover:bg-primary hover:text-primary-foreground"
+                        }`}
+                      >
+                        {isScPlaying ? <><PauseIcon small /> Now Playing</> : <><PlayIcon small /> Listen</>}
+                      </button>
+                    )}
+
+                    {hasAudio && hasSoundCloud && (
                       <button
                         data-testid={`sc-btn-${track.id}`}
                         onClick={() => toggleSoundCloud(track.id)}
@@ -178,6 +201,7 @@ export default function Listen() {
 
                   {hasSoundCloud && isScOpen && (
                     <motion.div
+                      key={`sc-${track.id}-${scAutoplay}`}
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
@@ -189,7 +213,7 @@ export default function Listen() {
                         width="100%"
                         height="166"
                         allow="autoplay"
-                        src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(track.soundcloudUrl ?? "")}&color=%23c9b77a&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`}
+                        src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(track.soundcloudUrl ?? "")}&color=%23c9b77a&auto_play=${scAutoplay ? "true" : "false"}&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`}
                         className="border-0 opacity-90"
                       />
                     </motion.div>
