@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   closestCenter,
@@ -16,27 +16,37 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  useListTracks,
-  useCreateTrack,
   useUpdateTrack,
   useDeleteTrack,
-  useListPoems,
-  useCreatePoem,
+  useCreateTrack,
   useUpdatePoem,
   useDeletePoem,
-  useListGallery,
-  useCreateGalleryItem,
+  useCreatePoem,
   useUpdateGalleryItem,
   useDeleteGalleryItem,
-  getListTracksQueryKey,
-  getListPoemsQueryKey,
-  getListGalleryQueryKey,
+  useCreateGalleryItem,
 } from "@workspace/api-client-react";
 
 const SESSION_KEY = "pv_admin_auth";
+const BASE = import.meta.env.BASE_URL;
 
 type Tab = "tracks" | "poems" | "gallery";
 
+// ─── Types matching DB shape ──────────────────────────────────────────────────
+interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
+interface AdminPoem  { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
+interface AdminGallery { id: number; src: string; caption: string; published: boolean; sortOrder: number; }
+
+// ─── Admin-specific fetchers (see all, incl. drafts) ────────────────────────
+const fetchAdminTracks  = () => fetch(`${BASE}api/admin/tracks`).then(r => r.json()) as Promise<AdminTrack[]>;
+const fetchAdminPoems   = () => fetch(`${BASE}api/admin/poems`).then(r => r.json())  as Promise<AdminPoem[]>;
+const fetchAdminGallery = () => fetch(`${BASE}api/admin/gallery`).then(r => r.json()) as Promise<AdminGallery[]>;
+
+const adminTracksKey  = ["admin", "tracks"]  as const;
+const adminPoemsKey   = ["admin", "poems"]   as const;
+const adminGalleryKey = ["admin", "gallery"] as const;
+
+// ─── Root ────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(SESSION_KEY) === "1");
   if (!authed) return <LoginGate onSuccess={() => { sessionStorage.setItem(SESSION_KEY, "1"); setAuthed(true); }} />;
@@ -50,16 +60,10 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/admin/auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw }),
-      });
-      if (res.ok) { onSuccess(); }
-      else { setError("Wrong passphrase."); setPw(""); }
+      const res = await fetch(`${BASE}api/admin/auth`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }) });
+      if (res.ok) { onSuccess(); } else { setError("Wrong passphrase."); setPw(""); }
     } catch { setError("Could not reach server."); }
     finally { setLoading(false); }
   };
@@ -74,20 +78,10 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
         <div className="w-full h-px bg-[#c9b77a]/15" />
         <div className="flex flex-col gap-2">
           <label className="text-[9px] tracking-[0.2em] text-[#c9b77a]/40 uppercase">Passphrase</label>
-          <input
-            data-testid="admin-password-input"
-            type="password"
-            autoFocus
-            value={pw}
-            onChange={e => setPw(e.target.value)}
-            className="admin-input"
-            placeholder="••••••••••••"
-          />
+          <input data-testid="admin-password-input" type="password" autoFocus value={pw} onChange={e => setPw(e.target.value)} className="admin-input" placeholder="••••••••••••" />
           {error && <p className="text-[9px] tracking-wider text-red-400/70">{error}</p>}
         </div>
-        <button type="submit" disabled={loading || !pw} data-testid="admin-login-btn" className="btn-admin disabled:opacity-30 text-center">
-          {loading ? "Checking..." : "Enter"}
-        </button>
+        <button type="submit" disabled={loading || !pw} data-testid="admin-login-btn" className="btn-admin disabled:opacity-30 text-center">{loading ? "Checking..." : "Enter"}</button>
       </form>
     </div>
   );
@@ -95,8 +89,6 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
 
 function AdminPanel() {
   const [tab, setTab] = useState<Tab>("tracks");
-  const handleLogout = () => { sessionStorage.removeItem(SESSION_KEY); window.location.reload(); };
-
   return (
     <div className="min-h-screen bg-[#111010] text-[#c9b77a] font-sans">
       <header className="border-b border-[#c9b77a]/20 px-8 py-6 flex items-center justify-between">
@@ -113,37 +105,53 @@ function AdminPanel() {
               </button>
             ))}
           </div>
-          <button onClick={handleLogout} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors">Sign out</button>
+          <button onClick={() => { sessionStorage.removeItem(SESSION_KEY); window.location.reload(); }} className="text-[9px] tracking-[0.2em] uppercase text-[#c9b77a]/30 hover:text-[#c9b77a]/60 transition-colors">Sign out</button>
         </div>
       </header>
       <main className="px-8 py-10 max-w-4xl mx-auto">
-        {tab === "tracks" && <TracksPanel />}
-        {tab === "poems" && <PoemsPanel />}
+        {tab === "tracks"  && <TracksPanel />}
+        {tab === "poems"   && <PoemsPanel />}
         {tab === "gallery" && <GalleryPanel />}
       </main>
     </div>
   );
 }
 
-// ─── Drag handle icon ────────────────────────────────────────────────────────
-
+// ─── Drag handle ──────────────────────────────────────────────────────────────
 function DragHandle(props: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div {...props} className={`cursor-grab active:cursor-grabbing text-[#c9b77a]/20 hover:text-[#c9b77a]/50 transition-colors select-none px-1 ${props.className ?? ""}`}>
+    <div {...props} className="cursor-grab active:cursor-grabbing text-[#c9b77a]/20 hover:text-[#c9b77a]/50 transition-colors select-none flex items-center px-3 border-r border-[#c9b77a]/10 self-stretch">
       <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
-        <circle cx="3" cy="4"  r="1.5" /><circle cx="9" cy="4"  r="1.5" />
-        <circle cx="3" cy="10" r="1.5" /><circle cx="9" cy="10" r="1.5" />
-        <circle cx="3" cy="16" r="1.5" /><circle cx="9" cy="16" r="1.5" />
+        <circle cx="3" cy="4"  r="1.5"/><circle cx="9" cy="4"  r="1.5"/>
+        <circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/>
+        <circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/>
       </svg>
     </div>
   );
 }
 
-// ─── Tracks ──────────────────────────────────────────────────────────────────
+// ─── Publish toggle ───────────────────────────────────────────────────────────
+function PublishToggle({ published, onToggle, saving }: { published: boolean; onToggle: () => void; saving: boolean }) {
+  return (
+    <button
+      onClick={onToggle}
+      disabled={saving}
+      title={published ? "Click to set as draft" : "Click to publish"}
+      className={`text-[8px] tracking-[0.2em] uppercase border px-2 py-0.5 transition-all duration-300 disabled:opacity-40 ${
+        published
+          ? "border-[#c9b77a]/40 text-[#c9b77a]/70 hover:border-red-400/50 hover:text-red-400/70"
+          : "border-[#c9b77a]/20 text-[#c9b77a]/30 hover:border-[#c9b77a]/50 hover:text-[#c9b77a]/60"
+      }`}
+    >
+      {published ? "Live" : "Draft"}
+    </button>
+  );
+}
 
+// ─── Tracks panel ─────────────────────────────────────────────────────────────
 function TracksPanel() {
   const qc = useQueryClient();
-  const { data: tracks = [], isLoading } = useListTracks();
+  const { data: tracks = [], isLoading } = useQuery({ queryKey: adminTracksKey, queryFn: fetchAdminTracks });
   const createTrack = useCreateTrack();
   const updateTrack = useUpdateTrack();
   const deleteTrack = useDeleteTrack();
@@ -153,22 +161,14 @@ function TracksPanel() {
   const [form, setForm] = useState({ title: "", genre: "", duration: "", description: "", imagePath: "", hasListen: false });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListTracksQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: adminTracksKey });
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = tracks.findIndex(t => t.id === active.id);
-    const newIndex = tracks.findIndex(t => t.id === over.id);
-    const reordered = arrayMove(tracks, oldIndex, newIndex);
-    // Optimistic update
-    qc.setQueryData(getListTracksQueryKey(), reordered);
-    // Persist new sortOrders
-    reordered.forEach((t, i) => {
-      if (t.sortOrder !== i) {
-        updateTrack.mutate({ id: t.id, data: { sortOrder: i } }, { onSuccess: invalidate });
-      }
-    });
+    const reordered = arrayMove(tracks, tracks.findIndex(t => t.id === active.id), tracks.findIndex(t => t.id === over.id));
+    qc.setQueryData(adminTracksKey, reordered);
+    reordered.forEach((t, i) => { if (t.sortOrder !== i) updateTrack.mutate({ id: t.id, data: { sortOrder: i } }, { onSuccess: invalidate }); });
   };
 
   const handleCreate = () => {
@@ -185,15 +185,16 @@ function TracksPanel() {
     );
   };
 
+  const handleTogglePublish = (t: AdminTrack) => {
+    updateTrack.mutate({ id: t.id, data: { published: !t.published } }, { onSuccess: invalidate });
+  };
+
   const handleDelete = (id: number) => {
     if (!confirm("Delete this track?")) return;
     deleteTrack.mutate({ id }, { onSuccess: invalidate });
   };
 
-  const startEdit = (t: typeof tracks[0]) => {
-    setEditing(t.id);
-    setForm({ title: t.title, genre: t.genre, duration: t.duration, description: t.description, imagePath: t.imagePath ?? "", hasListen: t.hasListen });
-  };
+  const startEdit = (t: AdminTrack) => { setEditing(t.id); setForm({ title: t.title, genre: t.genre, duration: t.duration, description: t.description, imagePath: t.imagePath ?? "", hasListen: t.hasListen }); };
 
   if (isLoading) return <Loading />;
 
@@ -212,20 +213,36 @@ function TracksPanel() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={tracks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {tracks.map(t => (
-              <SortableTrackRow
-                key={t.id}
-                track={t}
-                isEditing={editing === t.id}
-                form={form}
-                onStartEdit={() => startEdit(t)}
-                onCancelEdit={() => setEditing(null)}
-                onSave={() => handleUpdate(t.id)}
-                onDelete={() => handleDelete(t.id)}
-                onChange={setForm}
-                saving={updateTrack.isPending}
-              />
-            ))}
+            {tracks.map(t => {
+              const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(t.id);
+              return (
+                <div key={t.id} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+                  data-testid={`track-row-${t.id}`} className="border border-[#c9b77a]/15 flex">
+                  <DragHandle {...attributes} {...listeners} />
+                  <div className="flex-1 p-4">
+                    {editing === t.id ? (
+                      <TrackForm form={form} onChange={setForm} onSave={() => handleUpdate(t.id)} onCancel={() => setEditing(null)} saving={updateTrack.isPending} label="Save" />
+                    ) : (
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <div className="flex items-baseline gap-3 flex-wrap">
+                            <span className={`font-serif text-lg ${t.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{t.title}</span>
+                            <span className="text-[10px] tracking-widest text-[#c9b77a]/50">{t.duration}</span>
+                            <PublishToggle published={t.published} onToggle={() => handleTogglePublish(t)} saving={updateTrack.isPending} />
+                          </div>
+                          <span className="text-[9px] tracking-[0.2em] text-[#c9b77a]/60 uppercase">{t.genre}</span>
+                          <p className="text-xs text-[#c9b77a]/40 mt-1 leading-relaxed line-clamp-2">{t.description}</p>
+                        </div>
+                        <div className="flex gap-3 shrink-0">
+                          <button data-testid={`edit-track-${t.id}`} onClick={() => startEdit(t)} className="admin-action">Edit</button>
+                          <button data-testid={`delete-track-${t.id}`} onClick={() => handleDelete(t.id)} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </SortableContext>
       </DndContext>
@@ -233,52 +250,10 @@ function TracksPanel() {
   );
 }
 
-function SortableTrackRow({ track, isEditing, form, onStartEdit, onCancelEdit, onSave, onDelete, onChange, saving }: {
-  track: { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; hasListen: boolean };
-  isEditing: boolean;
-  form: { title: string; genre: string; duration: string; description: string; imagePath: string; hasListen: boolean };
-  onStartEdit: () => void;
-  onCancelEdit: () => void;
-  onSave: () => void;
-  onDelete: () => void;
-  onChange: (f: typeof form) => void;
-  saving: boolean;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: track.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined };
-
-  return (
-    <div ref={setNodeRef} style={style} data-testid={`track-row-${track.id}`} className="border border-[#c9b77a]/15 flex">
-      <DragHandle {...attributes} {...listeners} className="flex items-center py-5 pl-3 pr-1 border-r border-[#c9b77a]/10" />
-      <div className="flex-1 p-4">
-        {isEditing ? (
-          <TrackForm form={form} onChange={onChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
-        ) : (
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex flex-col gap-1 flex-1 min-w-0">
-              <div className="flex items-baseline gap-4">
-                <span className="font-serif text-lg text-[#c9b77a]">{track.title}</span>
-                <span className="text-[10px] tracking-widest text-[#c9b77a]/50">{track.duration}</span>
-              </div>
-              <span className="text-[9px] tracking-[0.2em] text-[#c9b77a]/60 uppercase">{track.genre}</span>
-              <p className="text-xs text-[#c9b77a]/40 mt-1 leading-relaxed line-clamp-2">{track.description}</p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <button data-testid={`edit-track-${track.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
-              <button data-testid={`delete-track-${track.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Poems ───────────────────────────────────────────────────────────────────
-
+// ─── Poems panel ──────────────────────────────────────────────────────────────
 function PoemsPanel() {
   const qc = useQueryClient();
-  const { data: poems = [], isLoading } = useListPoems();
+  const { data: poems = [], isLoading } = useQuery({ queryKey: adminPoemsKey, queryFn: fetchAdminPoems });
   const createPoem = useCreatePoem();
   const updatePoem = useUpdatePoem();
   const deletePoem = useDeletePoem();
@@ -288,19 +263,15 @@ function PoemsPanel() {
   const [form, setForm] = useState({ title: "", content: "", tags: "" });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListPoemsQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: adminPoemsKey });
   const parseTags = (s: string) => s.split(",").map(t => t.trim().toUpperCase()).filter(Boolean);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = poems.findIndex(p => p.id === active.id);
-    const newIndex = poems.findIndex(p => p.id === over.id);
-    const reordered = arrayMove(poems, oldIndex, newIndex);
-    qc.setQueryData(getListPoemsQueryKey(), reordered);
-    reordered.forEach((p, i) => {
-      if (p.sortOrder !== i) updatePoem.mutate({ id: p.id, data: { sortOrder: i } }, { onSuccess: invalidate });
-    });
+    const reordered = arrayMove(poems, poems.findIndex(p => p.id === active.id), poems.findIndex(p => p.id === over.id));
+    qc.setQueryData(adminPoemsKey, reordered);
+    reordered.forEach((p, i) => { if (p.sortOrder !== i) updatePoem.mutate({ id: p.id, data: { sortOrder: i } }, { onSuccess: invalidate }); });
   };
 
   const handleCreate = () => {
@@ -311,10 +282,11 @@ function PoemsPanel() {
   };
 
   const handleUpdate = (id: number) => {
-    updatePoem.mutate(
-      { id, data: { title: form.title || null, content: form.content, tags: parseTags(form.tags) } },
-      { onSuccess: () => { invalidate(); setEditing(null); } }
-    );
+    updatePoem.mutate({ id, data: { title: form.title || null, content: form.content, tags: parseTags(form.tags) } }, { onSuccess: () => { invalidate(); setEditing(null); } });
+  };
+
+  const handleTogglePublish = (p: AdminPoem) => {
+    updatePoem.mutate({ id: p.id, data: { published: !p.published } }, { onSuccess: invalidate });
   };
 
   const handleDelete = (id: number) => {
@@ -322,10 +294,7 @@ function PoemsPanel() {
     deletePoem.mutate({ id }, { onSuccess: invalidate });
   };
 
-  const startEdit = (p: typeof poems[0]) => {
-    setEditing(p.id);
-    setForm({ title: p.title ?? "", content: p.content, tags: p.tags.join(", ") });
-  };
+  const startEdit = (p: AdminPoem) => { setEditing(p.id); setForm({ title: p.title ?? "", content: p.content, tags: p.tags.join(", ") }); };
 
   if (isLoading) return <Loading />;
 
@@ -344,20 +313,37 @@ function PoemsPanel() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={poems.map(p => p.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {poems.map(p => (
-              <SortablePoemRow
-                key={p.id}
-                poem={p}
-                isEditing={editing === p.id}
-                form={form}
-                onStartEdit={() => startEdit(p)}
-                onCancelEdit={() => setEditing(null)}
-                onSave={() => handleUpdate(p.id)}
-                onDelete={() => handleDelete(p.id)}
-                onChange={setForm}
-                saving={updatePoem.isPending}
-              />
-            ))}
+            {poems.map(p => {
+              const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(p.id);
+              return (
+                <div key={p.id} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+                  data-testid={`poem-row-${p.id}`} className="border border-[#c9b77a]/15 flex">
+                  <DragHandle {...attributes} {...listeners} />
+                  <div className="flex-1 p-4">
+                    {editing === p.id ? (
+                      <PoemForm form={form} onChange={setForm} onSave={() => handleUpdate(p.id)} onCancel={() => setEditing(null)} saving={updatePoem.isPending} label="Save" />
+                    ) : (
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            {p.title && <span className={`font-serif text-base italic ${p.published ? "text-[#c9b77a]" : "text-[#c9b77a]/40"}`}>{p.title}</span>}
+                            <PublishToggle published={p.published} onToggle={() => handleTogglePublish(p)} saving={updatePoem.isPending} />
+                          </div>
+                          <pre className={`text-xs whitespace-pre-wrap font-sans leading-relaxed line-clamp-3 ${p.published ? "text-[#c9b77a]/50" : "text-[#c9b77a]/25"}`}>{p.content}</pre>
+                          <div className="flex gap-2 flex-wrap mt-1">
+                            {p.tags.map(tag => <span key={tag} className="text-[9px] tracking-widest text-[#c9b77a]/40 border border-[#c9b77a]/20 px-2 py-0.5">{tag}</span>)}
+                          </div>
+                        </div>
+                        <div className="flex gap-3 shrink-0">
+                          <button data-testid={`edit-poem-${p.id}`} onClick={() => startEdit(p)} className="admin-action">Edit</button>
+                          <button data-testid={`delete-poem-${p.id}`} onClick={() => handleDelete(p.id)} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </SortableContext>
       </DndContext>
@@ -365,51 +351,10 @@ function PoemsPanel() {
   );
 }
 
-function SortablePoemRow({ poem, isEditing, form, onStartEdit, onCancelEdit, onSave, onDelete, onChange, saving }: {
-  poem: { id: number; title: string | null; content: string; tags: string[]; sortOrder: number };
-  isEditing: boolean;
-  form: { title: string; content: string; tags: string };
-  onStartEdit: () => void;
-  onCancelEdit: () => void;
-  onSave: () => void;
-  onDelete: () => void;
-  onChange: (f: typeof form) => void;
-  saving: boolean;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: poem.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined };
-
-  return (
-    <div ref={setNodeRef} style={style} data-testid={`poem-row-${poem.id}`} className="border border-[#c9b77a]/15 flex">
-      <DragHandle {...attributes} {...listeners} className="flex items-center py-5 pl-3 pr-1 border-r border-[#c9b77a]/10" />
-      <div className="flex-1 p-4">
-        {isEditing ? (
-          <PoemForm form={form} onChange={onChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
-        ) : (
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex flex-col gap-2 flex-1 min-w-0">
-              {poem.title && <span className="font-serif text-base italic text-[#c9b77a]">{poem.title}</span>}
-              <pre className="text-xs text-[#c9b77a]/50 whitespace-pre-wrap font-sans leading-relaxed line-clamp-3">{poem.content}</pre>
-              <div className="flex gap-2 flex-wrap mt-1">
-                {poem.tags.map(tag => <span key={tag} className="text-[9px] tracking-widest text-[#c9b77a]/40 border border-[#c9b77a]/20 px-2 py-0.5">{tag}</span>)}
-              </div>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <button data-testid={`edit-poem-${poem.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
-              <button data-testid={`delete-poem-${poem.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Gallery ─────────────────────────────────────────────────────────────────
-
+// ─── Gallery panel ────────────────────────────────────────────────────────────
 function GalleryPanel() {
   const qc = useQueryClient();
-  const { data: items = [], isLoading } = useListGallery();
+  const { data: items = [], isLoading } = useQuery({ queryKey: adminGalleryKey, queryFn: fetchAdminGallery });
   const createItem = useCreateGalleryItem();
   const updateItem = useUpdateGalleryItem();
   const deleteItem = useDeleteGalleryItem();
@@ -419,32 +364,26 @@ function GalleryPanel() {
   const [form, setForm] = useState({ src: "", caption: "" });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListGalleryQueryKey() });
+  const invalidate = () => qc.invalidateQueries({ queryKey: adminGalleryKey });
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = items.findIndex(g => g.id === active.id);
-    const newIndex = items.findIndex(g => g.id === over.id);
-    const reordered = arrayMove(items, oldIndex, newIndex);
-    qc.setQueryData(getListGalleryQueryKey(), reordered);
-    reordered.forEach((g, i) => {
-      if (g.sortOrder !== i) updateItem.mutate({ id: g.id, data: { sortOrder: i } }, { onSuccess: invalidate });
-    });
+    const reordered = arrayMove(items, items.findIndex(g => g.id === active.id), items.findIndex(g => g.id === over.id));
+    qc.setQueryData(adminGalleryKey, reordered);
+    reordered.forEach((g, i) => { if (g.sortOrder !== i) updateItem.mutate({ id: g.id, data: { sortOrder: i } }, { onSuccess: invalidate }); });
   };
 
   const handleCreate = () => {
-    createItem.mutate(
-      { data: { src: form.src, caption: form.caption } },
-      { onSuccess: () => { invalidate(); setAdding(false); setForm({ src: "", caption: "" }); } }
-    );
+    createItem.mutate({ data: { src: form.src, caption: form.caption } }, { onSuccess: () => { invalidate(); setAdding(false); setForm({ src: "", caption: "" }); } });
   };
 
   const handleUpdate = (id: number) => {
-    updateItem.mutate(
-      { id, data: { src: form.src, caption: form.caption } },
-      { onSuccess: () => { invalidate(); setEditing(null); } }
-    );
+    updateItem.mutate({ id, data: { src: form.src, caption: form.caption } }, { onSuccess: () => { invalidate(); setEditing(null); } });
+  };
+
+  const handleTogglePublish = (g: AdminGallery) => {
+    updateItem.mutate({ id: g.id, data: { published: !g.published } }, { onSuccess: invalidate });
   };
 
   const handleDelete = (id: number) => {
@@ -452,10 +391,7 @@ function GalleryPanel() {
     deleteItem.mutate({ id }, { onSuccess: invalidate });
   };
 
-  const startEdit = (item: typeof items[0]) => {
-    setEditing(item.id);
-    setForm({ src: item.src, caption: item.caption });
-  };
+  const startEdit = (item: AdminGallery) => { setEditing(item.id); setForm({ src: item.src, caption: item.caption }); };
 
   if (isLoading) return <Loading />;
 
@@ -474,20 +410,34 @@ function GalleryPanel() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map(g => g.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
-            {items.map(item => (
-              <SortableGalleryRow
-                key={item.id}
-                item={item}
-                isEditing={editing === item.id}
-                form={form}
-                onStartEdit={() => startEdit(item)}
-                onCancelEdit={() => setEditing(null)}
-                onSave={() => handleUpdate(item.id)}
-                onDelete={() => handleDelete(item.id)}
-                onChange={setForm}
-                saving={updateItem.isPending}
-              />
-            ))}
+            {items.map(item => {
+              const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortableItem(item.id);
+              return (
+                <div key={item.id} ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+                  data-testid={`gallery-row-${item.id}`} className="border border-[#c9b77a]/15 flex">
+                  <DragHandle {...attributes} {...listeners} />
+                  <div className="flex-1 p-4">
+                    {editing === item.id ? (
+                      <GalleryForm form={form} onChange={setForm} onSave={() => handleUpdate(item.id)} onCancel={() => setEditing(null)} saving={updateItem.isPending} label="Save" />
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <div className={`w-20 h-16 overflow-hidden bg-[#1a1919] shrink-0 ${!item.published ? "opacity-30" : ""}`}>
+                          <img src={item.src} alt={item.caption} className="w-full h-full object-cover grayscale" />
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col gap-1">
+                          <span className={`text-[9px] tracking-[0.25em] uppercase ${item.published ? "text-[#c9b77a]/60" : "text-[#c9b77a]/25"}`}>{item.caption}</span>
+                          <PublishToggle published={item.published} onToggle={() => handleTogglePublish(item)} saving={updateItem.isPending} />
+                        </div>
+                        <div className="flex gap-3 shrink-0">
+                          <button data-testid={`edit-gallery-${item.id}`} onClick={() => startEdit(item)} className="admin-action">Edit</button>
+                          <button data-testid={`delete-gallery-${item.id}`} onClick={() => handleDelete(item.id)} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </SortableContext>
       </DndContext>
@@ -495,51 +445,15 @@ function GalleryPanel() {
   );
 }
 
-function SortableGalleryRow({ item, isEditing, form, onStartEdit, onCancelEdit, onSave, onDelete, onChange, saving }: {
-  item: { id: number; src: string; caption: string; sortOrder: number };
-  isEditing: boolean;
-  form: { src: string; caption: string };
-  onStartEdit: () => void;
-  onCancelEdit: () => void;
-  onSave: () => void;
-  onDelete: () => void;
-  onChange: (f: typeof form) => void;
-  saving: boolean;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, zIndex: isDragging ? 10 : undefined };
-
-  return (
-    <div ref={setNodeRef} style={style} data-testid={`gallery-row-${item.id}`} className="border border-[#c9b77a]/15 flex">
-      <DragHandle {...attributes} {...listeners} className="flex items-center py-4 pl-3 pr-1 border-r border-[#c9b77a]/10" />
-      <div className="flex-1 p-4">
-        {isEditing ? (
-          <GalleryForm form={form} onChange={onChange} onSave={onSave} onCancel={onCancelEdit} saving={saving} label="Save" />
-        ) : (
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-16 overflow-hidden bg-[#1a1919] shrink-0">
-              <img src={item.src} alt={item.caption} className="w-full h-full object-cover opacity-70 grayscale" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-[9px] tracking-[0.25em] text-[#c9b77a]/60 uppercase">{item.caption}</span>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <button data-testid={`edit-gallery-${item.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
-              <button data-testid={`delete-gallery-${item.id}`} onClick={onDelete} className="admin-action text-red-400/60 hover:text-red-400">Del</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+// ─── Hook helper ──────────────────────────────────────────────────────────────
+function useSortableItem(id: number) {
+  return useSortable({ id });
 }
 
-// ─── Shared form components ──────────────────────────────────────────────────
-
+// ─── Shared form components ───────────────────────────────────────────────────
 function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
   form: { title: string; genre: string; duration: string; description: string; imagePath: string; hasListen: boolean };
-  onChange: (f: typeof form) => void;
-  onSave: () => void; onCancel: () => void; saving: boolean; label: string;
+  onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
@@ -561,8 +475,7 @@ function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
 
 function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
   form: { title: string; content: string; tags: string };
-  onChange: (f: typeof form) => void;
-  onSave: () => void; onCancel: () => void; saving: boolean; label: string;
+  onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">
@@ -576,8 +489,7 @@ function PoemForm({ form, onChange, onSave, onCancel, saving, label }: {
 
 function GalleryForm({ form, onChange, onSave, onCancel, saving, label }: {
   form: { src: string; caption: string };
-  onChange: (f: typeof form) => void;
-  onSave: () => void; onCancel: () => void; saving: boolean; label: string;
+  onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
   return (
     <div className="border border-[#c9b77a]/30 p-5 flex flex-col gap-4 bg-[#161515]">

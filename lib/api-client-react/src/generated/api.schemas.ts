@@ -18,6 +18,7 @@ export interface Track {
   /** @nullable */
   imagePath: string | null;
   hasListen: boolean;
+  published: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -31,6 +32,7 @@ export interface CreateTrackBody {
   /** @nullable */
   imagePath?: string | null;
   hasListen?: boolean;
+  published?: boolean;
   sortOrder?: number;
 }
 
@@ -42,6 +44,7 @@ export interface UpdateTrackBody {
   /** @nullable */
   imagePath?: string | null;
   hasListen?: boolean;
+  published?: boolean;
   sortOrder?: number;
 }
 
@@ -51,6 +54,7 @@ export interface Poem {
   title: string | null;
   content: string;
   tags: string[];
+  published: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -61,6 +65,7 @@ export interface CreatePoemBody {
   title?: string | null;
   content: string;
   tags?: string[];
+  published?: boolean;
   sortOrder?: number;
 }
 
@@ -69,6 +74,7 @@ export interface UpdatePoemBody {
   title?: string | null;
   content?: string;
   tags?: string[];
+  published?: boolean;
   sortOrder?: number;
 }
 
@@ -76,6 +82,7 @@ export interface GalleryItem {
   id: number;
   src: string;
   caption: string;
+  published: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -84,11 +91,13 @@ export interface GalleryItem {
 export interface CreateGalleryItemBody {
   src: string;
   caption: string;
+  published?: boolean;
   sortOrder?: number;
 }
 
 export interface UpdateGalleryItemBody {
   src?: string;
   caption?: string;
+  published?: boolean;
   sortOrder?: number;
 }

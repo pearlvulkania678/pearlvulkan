@@ -18,7 +18,7 @@ function serializePoem(p: typeof poemsTable.$inferSelect) {
 }
 
 router.get("/poems", async (req, res): Promise<void> => {
-  const poems = await db.select().from(poemsTable).orderBy(poemsTable.sortOrder);
+  const poems = await db.select().from(poemsTable).where(eq(poemsTable.published, true)).orderBy(poemsTable.sortOrder);
   res.json(ListPoemsResponse.parse(poems.map(serializePoem)));
 });
 

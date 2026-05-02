@@ -18,7 +18,7 @@ function serializeGallery(g: typeof galleryTable.$inferSelect) {
 }
 
 router.get("/gallery", async (req, res): Promise<void> => {
-  const items = await db.select().from(galleryTable).orderBy(galleryTable.sortOrder);
+  const items = await db.select().from(galleryTable).where(eq(galleryTable.published, true)).orderBy(galleryTable.sortOrder);
   res.json(ListGalleryResponse.parse(items.map(serializeGallery)));
 });
 

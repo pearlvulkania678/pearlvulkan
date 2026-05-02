@@ -18,7 +18,7 @@ function serializeTrack(t: typeof tracksTable.$inferSelect) {
 }
 
 router.get("/tracks", async (req, res): Promise<void> => {
-  const tracks = await db.select().from(tracksTable).orderBy(tracksTable.sortOrder);
+  const tracks = await db.select().from(tracksTable).where(eq(tracksTable.published, true)).orderBy(tracksTable.sortOrder);
   res.json(ListTracksResponse.parse(tracks.map(serializeTrack)));
 });
 

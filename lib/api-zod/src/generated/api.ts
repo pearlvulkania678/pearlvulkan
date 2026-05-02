@@ -26,6 +26,7 @@ export const ListTracksResponseItem = zod.object({
   description: zod.string(),
   imagePath: zod.string().nullable(),
   hasListen: zod.boolean(),
+  published: zod.boolean(),
   sortOrder: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -42,6 +43,7 @@ export const CreateTrackBody = zod.object({
   description: zod.string(),
   imagePath: zod.string().nullish(),
   hasListen: zod.boolean().optional(),
+  published: zod.boolean().optional(),
   sortOrder: zod.number().optional(),
 });
 
@@ -59,6 +61,7 @@ export const UpdateTrackBody = zod.object({
   description: zod.string().optional(),
   imagePath: zod.string().nullish(),
   hasListen: zod.boolean().optional(),
+  published: zod.boolean().optional(),
   sortOrder: zod.number().optional(),
 });
 
@@ -70,6 +73,7 @@ export const UpdateTrackResponse = zod.object({
   description: zod.string(),
   imagePath: zod.string().nullable(),
   hasListen: zod.boolean(),
+  published: zod.boolean(),
   sortOrder: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -90,6 +94,7 @@ export const ListPoemsResponseItem = zod.object({
   title: zod.string().nullable(),
   content: zod.string(),
   tags: zod.array(zod.string()),
+  published: zod.boolean(),
   sortOrder: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -103,6 +108,7 @@ export const CreatePoemBody = zod.object({
   title: zod.string().nullish(),
   content: zod.string(),
   tags: zod.array(zod.string()).optional(),
+  published: zod.boolean().optional(),
   sortOrder: zod.number().optional(),
 });
 
@@ -117,6 +123,7 @@ export const UpdatePoemBody = zod.object({
   title: zod.string().nullish(),
   content: zod.string().optional(),
   tags: zod.array(zod.string()).optional(),
+  published: zod.boolean().optional(),
   sortOrder: zod.number().optional(),
 });
 
@@ -125,6 +132,7 @@ export const UpdatePoemResponse = zod.object({
   title: zod.string().nullable(),
   content: zod.string(),
   tags: zod.array(zod.string()),
+  published: zod.boolean(),
   sortOrder: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -144,6 +152,7 @@ export const ListGalleryResponseItem = zod.object({
   id: zod.number(),
   src: zod.string(),
   caption: zod.string(),
+  published: zod.boolean(),
   sortOrder: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -156,6 +165,7 @@ export const ListGalleryResponse = zod.array(ListGalleryResponseItem);
 export const CreateGalleryItemBody = zod.object({
   src: zod.string(),
   caption: zod.string(),
+  published: zod.boolean().optional(),
   sortOrder: zod.number().optional(),
 });
 
@@ -169,6 +179,7 @@ export const UpdateGalleryItemParams = zod.object({
 export const UpdateGalleryItemBody = zod.object({
   src: zod.string().optional(),
   caption: zod.string().optional(),
+  published: zod.boolean().optional(),
   sortOrder: zod.number().optional(),
 });
 
@@ -176,6 +187,7 @@ export const UpdateGalleryItemResponse = zod.object({
   id: zod.number(),
   src: zod.string(),
   caption: zod.string(),
+  published: zod.boolean(),
   sortOrder: zod.number(),
   createdAt: zod.string(),
   updatedAt: zod.string(),

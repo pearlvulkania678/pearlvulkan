@@ -10,6 +10,7 @@ export const tracksTable = pgTable("tracks", {
   description: text("description").notNull(),
   imagePath: text("image_path"),
   hasListen: boolean("has_listen").notNull().default(false),
+  published: boolean("published").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
