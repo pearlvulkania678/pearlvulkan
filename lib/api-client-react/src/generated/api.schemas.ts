@@ -19,6 +19,8 @@ export interface Track {
   imagePath: string | null;
   /** @nullable */
   audioPath: string | null;
+  /** @nullable */
+  soundcloudUrl: string | null;
   hasListen: boolean;
   published: boolean;
   sortOrder: number;
@@ -35,6 +37,8 @@ export interface CreateTrackBody {
   imagePath?: string | null;
   /** @nullable */
   audioPath?: string | null;
+  /** @nullable */
+  soundcloudUrl?: string | null;
   hasListen?: boolean;
   published?: boolean;
   sortOrder?: number;
@@ -49,6 +53,8 @@ export interface UpdateTrackBody {
   imagePath?: string | null;
   /** @nullable */
   audioPath?: string | null;
+  /** @nullable */
+  soundcloudUrl?: string | null;
   hasListen?: boolean;
   published?: boolean;
   sortOrder?: number;

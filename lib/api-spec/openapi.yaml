@@ -280,6 +280,8 @@ components:
           type: ["string", "null"]
         audioPath:
           type: ["string", "null"]
+        soundcloudUrl:
+          type: ["string", "null"]
         hasListen:
           type: boolean
         published:
@@ -298,6 +300,7 @@ components:
         - description
         - imagePath
         - audioPath
+        - soundcloudUrl
         - hasListen
         - published
         - sortOrder
@@ -318,6 +321,8 @@ components:
         imagePath:
           type: ["string", "null"]
         audioPath:
+          type: ["string", "null"]
+        soundcloudUrl:
           type: ["string", "null"]
         hasListen:
           type: boolean
@@ -345,6 +350,8 @@ components:
         imagePath:
           type: ["string", "null"]
         audioPath:
+          type: ["string", "null"]
+        soundcloudUrl:
           type: ["string", "null"]
         hasListen:
           type: boolean

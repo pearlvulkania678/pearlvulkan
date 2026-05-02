@@ -321,3 +321,13 @@
     @apply text-[9px] tracking-[0.15em] uppercase text-[#c9b77a]/40 hover:text-[#c9b77a] transition-colors duration-200;
   }
 }
+
+@keyframes waveform-bar {
+  0%, 100% { transform: scaleY(0.15); }
+  50% { transform: scaleY(1); }
+}
+
+.waveform-bar {
+  animation: waveform-bar 0.9s ease-in-out infinite;
+  transform-origin: bottom;
+}

@@ -33,7 +33,7 @@ const BASE = import.meta.env.BASE_URL;
 type Tab = "tracks" | "poems" | "gallery";
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
-interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
+interface AdminTrack { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem  { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
 interface AdminGallery { id: number; src: string; caption: string; published: boolean; sortOrder: number; }
 
@@ -158,7 +158,7 @@ function TracksPanel() {
 
   const [editing, setEditing] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: "", genre: "", duration: "", description: "", imagePath: "", audioPath: "", hasListen: false });
+  const [form, setForm] = useState({ title: "", genre: "", duration: "", description: "", imagePath: "", audioPath: "", soundcloudUrl: "", hasListen: false });
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const invalidate = () => qc.invalidateQueries({ queryKey: adminTracksKey });
@@ -173,14 +173,14 @@ function TracksPanel() {
 
   const handleCreate = () => {
     createTrack.mutate(
-      { data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, audioPath: form.audioPath || null, hasListen: form.hasListen } },
-      { onSuccess: () => { invalidate(); setAdding(false); setForm({ title: "", genre: "", duration: "", description: "", imagePath: "", audioPath: "", hasListen: false }); } }
+      { data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, audioPath: form.audioPath || null, soundcloudUrl: form.soundcloudUrl || null, hasListen: form.hasListen } },
+      { onSuccess: () => { invalidate(); setAdding(false); setForm({ title: "", genre: "", duration: "", description: "", imagePath: "", audioPath: "", soundcloudUrl: "", hasListen: false }); } }
     );
   };
 
   const handleUpdate = (id: number) => {
     updateTrack.mutate(
-      { id, data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, audioPath: form.audioPath || null, hasListen: form.hasListen } },
+      { id, data: { title: form.title, genre: form.genre, duration: form.duration, description: form.description, imagePath: form.imagePath || null, audioPath: form.audioPath || null, soundcloudUrl: form.soundcloudUrl || null, hasListen: form.hasListen } },
       { onSuccess: () => { invalidate(); setEditing(null); } }
     );
   };
@@ -194,7 +194,7 @@ function TracksPanel() {
     deleteTrack.mutate({ id }, { onSuccess: invalidate });
   };
 
-  const startEdit = (t: AdminTrack) => { setEditing(t.id); setForm({ title: t.title, genre: t.genre, duration: t.duration, description: t.description, imagePath: t.imagePath ?? "", audioPath: t.audioPath ?? "", hasListen: t.hasListen }); };
+  const startEdit = (t: AdminTrack) => { setEditing(t.id); setForm({ title: t.title, genre: t.genre, duration: t.duration, description: t.description, imagePath: t.imagePath ?? "", audioPath: t.audioPath ?? "", soundcloudUrl: t.soundcloudUrl ?? "", hasListen: t.hasListen }); };
 
   if (isLoading) return <Loading />;
 
@@ -402,7 +402,7 @@ function GalleryPanel() {
 }
 
 // ─── Sortable row components (hooks must be at component top level, not in .map) ─
-type TrackFormState = { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; hasListen: boolean };
+type TrackFormState = { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; soundcloudUrl: string; hasListen: boolean };
 type PoemFormState  = { title: string; content: string; tags: string };
 type GalleryFormState = { src: string; caption: string };
 
@@ -431,6 +431,7 @@ function SortableTrackRow({ track, isEditing, form, onFormChange, onSave, onCanc
               <span className="text-[9px] tracking-[0.2em] text-[#c9b77a]/60 uppercase">{track.genre}</span>
               <p className="text-xs text-[#c9b77a]/40 mt-1 leading-relaxed line-clamp-2">{track.description}</p>
               {track.audioPath && <span className="text-[8px] tracking-widest text-[#c9b77a]/30 uppercase mt-1">♪ audio attached</span>}
+              {track.soundcloudUrl && <span className="text-[8px] tracking-widest text-[#c9b77a]/30 uppercase mt-1">☁ soundcloud linked</span>}
             </div>
             <div className="flex gap-3 shrink-0">
               <button data-testid={`edit-track-${track.id}`} onClick={onStartEdit} className="admin-action">Edit</button>
@@ -516,7 +517,7 @@ function SortableGalleryRow({ item, isEditing, form, onFormChange, onSave, onCan
 
 // ─── Shared form components ───────────────────────────────────────────────────
 function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
-  form: { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; hasListen: boolean };
+  form: { title: string; genre: string; duration: string; description: string; imagePath: string; audioPath: string; soundcloudUrl: string; hasListen: boolean };
   onChange: (f: typeof form) => void; onSave: () => void; onCancel: () => void; saving: boolean; label: string;
 }) {
   return (
@@ -529,6 +530,19 @@ function TrackForm({ form, onChange, onSave, onCancel, saving, label }: {
       </div>
       <Field label="Description"><textarea data-testid="input-description" className="admin-input h-20 resize-none" value={form.description} onChange={e => onChange({ ...form, description: e.target.value })} /></Field>
       <AudioUploadField value={form.audioPath} onChange={audioPath => onChange({ ...form, audioPath })} />
+      <div className="flex flex-col gap-1">
+        <p className="text-[9px] tracking-[0.25em] text-[#c9b77a]/40 uppercase mb-1">SoundCloud</p>
+        <Field label="SoundCloud Track URL">
+          <input
+            data-testid="input-soundcloud"
+            className="admin-input"
+            value={form.soundcloudUrl}
+            onChange={e => onChange({ ...form, soundcloudUrl: e.target.value })}
+            placeholder="https://soundcloud.com/artist/track-name"
+          />
+        </Field>
+        <p className="text-[8px] text-[#c9b77a]/25 tracking-wide mt-1">Paste the full SoundCloud track URL. If both audio file and SoundCloud are set, audio file takes priority.</p>
+      </div>
       <FormActions onSave={onSave} onCancel={onCancel} saving={saving} label={label} />
     </div>
   );
