@@ -60,7 +60,7 @@ export default function Listen() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 1 }}
-        className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8"
+        className="mb-10 md:mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8"
       >
         <div>
           <p className="font-sans text-[10px] tracking-[0.3em] text-primary uppercase mb-3">Sound</p>

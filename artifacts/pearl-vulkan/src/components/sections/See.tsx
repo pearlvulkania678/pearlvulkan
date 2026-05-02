@@ -36,7 +36,7 @@ export default function See() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 1 }}
-        className="mb-24"
+        className="mb-10 md:mb-24"
       >
         <h2 className="font-serif text-4xl text-foreground tracking-[0.1em] uppercase mb-4">See</h2>
         <div className="w-12 h-px bg-primary/40"></div>
@@ -44,9 +44,9 @@ export default function See() {
 
       {/* ── Poems ── */}
       {(poemsLoading || poems.length > 0) && (
-        <div className="mb-40">
+        <div className="mb-20 md:mb-40">
           {poemsLoading ? (
-            <div className="flex flex-col gap-32 max-w-3xl mx-auto animate-pulse">
+            <div className="flex flex-col gap-16 md:gap-32 max-w-3xl mx-auto animate-pulse">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex flex-col gap-4">
                   <div className="h-4 bg-muted w-full rounded" />
@@ -56,7 +56,7 @@ export default function See() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-32 max-w-3xl mx-auto">
+            <div className="flex flex-col gap-16 md:gap-32 max-w-3xl mx-auto">
               {poems.map((poem, i) => {
                 const blocks = parsePoemContent(poem.content);
                 return (

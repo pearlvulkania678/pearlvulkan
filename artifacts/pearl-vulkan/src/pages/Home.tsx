@@ -96,38 +96,38 @@ export default function Home() {
       <Navigation activeSection={activeSection} />
       <ScrollToTop />
 
-      <main className="pl-6 md:pl-24 pr-24 md:pr-48 max-w-7xl mx-auto flex flex-col">
-        <section id="start" className="min-h-screen flex items-center pt-24 pb-24">
+      <main className="px-5 md:pl-24 md:pr-48 max-w-7xl mx-auto flex flex-col">
+        <section id="start" className="min-h-screen flex items-center py-20 md:py-24">
           <Start />
         </section>
 
-        <div className="w-full h-px bg-primary/20 my-12" />
+        <div className="w-full h-px bg-primary/20 my-8 md:my-12" />
 
-        <section id="listen" className="min-h-screen flex items-center pt-24 pb-24">
+        <section id="listen" className="min-h-screen flex items-center py-16 md:py-24">
           <Listen />
         </section>
 
-        <div className="w-full h-px bg-primary/20 my-12" />
+        <div className="w-full h-px bg-primary/20 my-8 md:my-12" />
 
-        <section id="see" className="min-h-screen flex items-center pt-24 pb-24">
+        <section id="see" className="min-h-screen flex items-center py-16 md:py-24">
           <See />
         </section>
 
-        <div className="w-full h-px bg-primary/20 my-12" />
+        <div className="w-full h-px bg-primary/20 my-8 md:my-12" />
 
-        <section id="touch" className="min-h-screen flex items-center pt-24 pb-24">
+        <section id="touch" className="min-h-screen flex items-center py-16 md:py-24">
           <Touch />
         </section>
 
-        <div className="w-full h-px bg-primary/20 my-12" />
+        <div className="w-full h-px bg-primary/20 my-8 md:my-12" />
 
-        <section id="sense" className="min-h-screen flex items-center pt-24 pb-24">
+        <section id="sense" className="min-h-screen flex items-center py-16 md:py-24">
           <Sense />
         </section>
       </main>
 
       <footer className="mt-24 border-t border-primary/10">
-        <div className="pl-6 md:pl-24 pr-24 md:pr-48 max-w-7xl mx-auto py-16 flex flex-col gap-12">
+        <div className="px-5 md:pl-24 md:pr-48 max-w-7xl mx-auto py-12 md:py-16 flex flex-col gap-10 md:gap-12">
 
           {/* Artist name */}
           <motion.div

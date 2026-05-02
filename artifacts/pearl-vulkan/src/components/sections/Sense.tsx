@@ -115,7 +115,7 @@ export default function Sense() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 1 }}
-        className="mb-24"
+        className="mb-10 md:mb-24"
       >
         <p className="font-sans text-[10px] tracking-[0.3em] text-primary uppercase mb-3">Experience</p>
         <h2 className="font-serif text-4xl text-foreground tracking-[0.1em] uppercase mb-4">Sense</h2>
