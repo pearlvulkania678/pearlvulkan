@@ -1,4 +1,4 @@
-import { useState, useId } from "react";
+import { useState, useId, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -29,17 +29,20 @@ import {
 
 const fetchAdminTouch = () => fetch(`${BASE}api/admin/touch`).then(r => r.json()) as Promise<AdminTouch[]>;
 const fetchAdminSense = () => fetch(`${BASE}api/admin/sense`).then(r => r.json()) as Promise<AdminSense[]>;
+const fetchAdminStart = () => fetch(`${BASE}api/admin/start`).then(r => r.json()) as Promise<AdminStart>;
 
 const adminTouchKey = ["admin", "touch"] as const;
 const adminSenseKey = ["admin", "sense"] as const;
+const adminStartKey = ["admin", "start"] as const;
 
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
-type Tab = "tracks" | "see" | "touch" | "sense" | "log";
-const TAB_LABELS: Record<Tab, string> = { tracks: "listen", see: "see", touch: "touch", sense: "sense", log: "log" };
+type Tab = "start" | "tracks" | "see" | "touch" | "sense" | "log";
+const TAB_LABELS: Record<Tab, string> = { start: "start", tracks: "listen", see: "see", touch: "touch", sense: "sense", log: "log" };
 
 // ─── Types matching DB shape ──────────────────────────────────────────────────
+interface AdminStart   { id: number; artistName: string; quote: string; tagline: string; backgroundImage: string | null; }
 interface AdminTrack   { id: number; title: string; genre: string; duration: string; description: string; imagePath: string | null; audioPath: string | null; soundcloudUrl: string | null; hasListen: boolean; published: boolean; sortOrder: number; }
 interface AdminPoem    { id: number; title: string | null; content: string; tags: string[]; published: boolean; sortOrder: number; }
 interface AdminTouch   { id: number; title: string; subtitle: string | null; description: string | null; imagePath: string | null; linkUrl: string | null; content: string; published: boolean; sortOrder: number; }
@@ -130,7 +133,7 @@ function BuildBanner() {
 }
 
 function AdminPanel() {
-  const [tab, setTab] = useState<Tab>("tracks");
+  const [tab, setTab] = useState<Tab>("start");
   return (
     <div className="min-h-screen bg-[#111010] text-[#c9b77a] font-sans">
       <header className="border-b border-[#c9b77a]/20 px-8 py-6 flex items-center justify-between">
@@ -140,7 +143,7 @@ function AdminPanel() {
         </div>
         <div className="flex items-center gap-8">
           <div className="flex gap-6 flex-wrap">
-            {(["tracks", "see", "touch", "sense", "log"] as Tab[]).map(t => (
+            {(["start", "tracks", "see", "touch", "sense", "log"] as Tab[]).map(t => (
               <button key={t} data-testid={`tab-${t}`} onClick={() => setTab(t)}
                 className={`text-[10px] tracking-[0.2em] uppercase transition-colors pb-1 ${tab === t ? "text-[#c9b77a] border-b border-[#c9b77a]" : "text-[#c9b77a]/40 hover:text-[#c9b77a]/70"}`}>
                 {TAB_LABELS[t]}
@@ -154,12 +157,105 @@ function AdminPanel() {
         <BuildBanner />
       </div>
       <main className="px-8 py-10 max-w-4xl mx-auto">
+        {tab === "start"  && <StartPanel />}
         {tab === "tracks" && <TracksPanel />}
         {tab === "see"    && <PoemsPanel />}
         {tab === "touch"  && <TouchPanel />}
         {tab === "sense"   && <SensePanel />}
         {tab === "log"     && <ActivityPanel />}
       </main>
+    </div>
+  );
+}
+
+// ─── Start Panel ─────────────────────────────────────────────────────────────
+function StartPanel() {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery<AdminStart>({ queryKey: adminStartKey, queryFn: fetchAdminStart });
+  const [form, setForm] = useState<Omit<AdminStart, "id">>({ artistName: "Pearl Vulkan", quote: "", tagline: "", backgroundImage: null });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (data) setForm({ artistName: data.artistName, quote: data.quote, tagline: data.tagline, backgroundImage: data.backgroundImage });
+  }, [data]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch(`${BASE}api/admin/start`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      await qc.invalidateQueries({ queryKey: adminStartKey });
+      await qc.invalidateQueries({ queryKey: ["start"] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading) return <div className="text-[#c9b77a]/30 text-[9px] tracking-widest uppercase animate-pulse py-12 text-center">Loading…</div>;
+
+  const words = form.artistName.split(" ");
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-serif text-xl tracking-widest uppercase text-[#c9b77a]">Start</h2>
+          <p className="text-[9px] tracking-[0.2em] text-[#c9b77a]/30 uppercase mt-1">Landing section content</p>
+        </div>
+        {saved && <span className="text-[9px] tracking-widest text-[#c9b77a]/60 uppercase">✓ Saved</span>}
+      </div>
+
+      <div className="border border-[#c9b77a]/20 p-6 flex flex-col gap-5 bg-[#161515]">
+        <Field label="Artist Name">
+          <input className="admin-input" value={form.artistName} onChange={e => setForm(f => ({ ...f, artistName: e.target.value }))} placeholder="Pearl Vulkan" />
+        </Field>
+
+        <Field label="Opening Quote">
+          <textarea
+            className="admin-input h-28 resize-none leading-relaxed"
+            value={form.quote}
+            onChange={e => setForm(f => ({ ...f, quote: e.target.value }))}
+            placeholder="The long italic opening text that sets the mood…"
+          />
+        </Field>
+
+        <Field label="Tagline">
+          <input className="admin-input" value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Enter. Slowly." />
+        </Field>
+
+        <ImageUploadField inputId="start-bg-input" value={form.backgroundImage ?? ""} onChange={v => setForm(f => ({ ...f, backgroundImage: v || null }))} />
+
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="text-[9px] tracking-[0.2em] uppercase border border-[#c9b77a]/40 text-[#c9b77a]/70 hover:text-[#c9b77a] hover:border-[#c9b77a] transition-colors px-8 py-2.5 disabled:opacity-40"
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+
+      <div className="border border-[#c9b77a]/10 p-5 bg-[#161515]/50">
+        <p className="text-[8px] tracking-[0.2em] text-[#c9b77a]/20 uppercase mb-4">Live Preview</p>
+        <div className="flex flex-col gap-3 pl-4 border-l border-[#c9b77a]/15">
+          <p className="font-serif text-3xl text-[#c9b77a]/80 uppercase tracking-widest leading-tight">
+            {words.map((w, i) => <span key={i}>{w}{i < words.length - 1 ? <br /> : ""}</span>)}
+          </p>
+          {form.quote && (
+            <p className="font-serif text-sm text-[#c9b77a]/50 italic leading-relaxed max-w-md">{form.quote}</p>
+          )}
+          {form.tagline && (
+            <p className="font-sans text-[10px] tracking-[0.2em] text-[#c9b77a]/40 uppercase">{form.tagline}</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
