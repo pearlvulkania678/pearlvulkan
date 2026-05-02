@@ -18,17 +18,8 @@ export default function Navigation({ activeSection }: NavigationProps) {
   const isHome = location === "/" || location === "";
 
   const handleClick = (id: string) => {
-    if (isHome) {
-      if (id === "start") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: "smooth" });
-      }
-    } else {
-      if (id === "start") navigate("/");
-      else navigate(`/${id}`);
-    }
+    if (id === "start") navigate("/");
+    else navigate(`/${id}`);
   };
 
   const isActive = (id: string) => {

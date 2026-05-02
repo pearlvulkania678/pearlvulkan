@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 
 const BASE = import.meta.env.BASE_URL;
@@ -106,6 +107,7 @@ function BlockRenderer({ blocks }: { blocks: ContentBlock[] }) {
 }
 
 export default function Sense() {
+  const [, navigate] = useLocation();
   const { data: items = [], isLoading } = useSenseItems();
 
   return (
@@ -184,9 +186,17 @@ export default function Sense() {
 
                 {/* Main content */}
                 <div className="flex-1 flex flex-col gap-5">
-                  <h3 className="font-serif text-2xl md:text-3xl text-foreground tracking-wide leading-snug">
-                    {item.title}
-                  </h3>
+                  <div className="flex items-start justify-between gap-4">
+                    <h3 className="font-serif text-2xl md:text-3xl text-foreground tracking-wide leading-snug">
+                      {item.title}
+                    </h3>
+                    <button
+                      onClick={() => navigate(`/sense/${item.id}`)}
+                      className="shrink-0 font-sans text-[9px] tracking-[0.25em] text-primary/40 hover:text-primary uppercase transition-colors duration-300 whitespace-nowrap pt-1"
+                    >
+                      open →
+                    </button>
+                  </div>
 
                   {hasBlocks ? (
                     <BlockRenderer blocks={blocks} />

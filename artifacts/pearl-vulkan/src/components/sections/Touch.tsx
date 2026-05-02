@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 
 const BASE = import.meta.env.BASE_URL;
@@ -105,6 +106,7 @@ function BlockRenderer({ blocks }: { blocks: ContentBlock[] }) {
 }
 
 export default function Touch() {
+  const [, navigate] = useLocation();
   const { data: items = [], isLoading } = useTouchItems();
 
   return (
@@ -175,11 +177,19 @@ export default function Touch() {
                 )}
 
                 <div className="flex flex-col gap-3 border-l border-primary/20 pl-5 group-hover:border-primary transition-colors duration-700">
-                  <div>
-                    <h3 className="font-serif text-2xl text-foreground tracking-wide">{item.title}</h3>
-                    {item.subtitle && (
-                      <p className="font-sans text-[10px] tracking-[0.25em] text-primary/60 uppercase mt-1">{item.subtitle}</p>
-                    )}
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-serif text-2xl text-foreground tracking-wide">{item.title}</h3>
+                      {item.subtitle && (
+                        <p className="font-sans text-[10px] tracking-[0.25em] text-primary/60 uppercase mt-1">{item.subtitle}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/touch/${item.id}`)}
+                      className="shrink-0 font-sans text-[9px] tracking-[0.25em] text-primary/40 hover:text-primary uppercase transition-colors duration-300 whitespace-nowrap pt-1"
+                    >
+                      open →
+                    </button>
                   </div>
 
                   {hasBlocks ? (

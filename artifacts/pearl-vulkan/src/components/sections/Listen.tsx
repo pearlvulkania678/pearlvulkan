@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
 import { useState, useRef } from "react";
+import { useLocation } from "wouter";
 import { useListTracks } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Listen() {
+  const [, navigate] = useLocation();
   const { data: tracks = [], isLoading } = useListTracks();
   const [filter, setFilter] = useState<string>("ALL MUSIC");
   const [playing, setPlaying] = useState<number | null>(null);
@@ -141,8 +143,14 @@ export default function Listen() {
 
                 <div className="flex-1 flex flex-col gap-3 w-full">
                   <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2">
-                    <h3 className="font-serif text-2xl text-foreground tracking-wide">{track.title}</h3>
-                    <span className="font-sans text-xs text-muted-foreground tracking-widest">{track.duration}</span>
+                    <button
+                      onClick={() => navigate(`/listen/${track.id}`)}
+                      className="font-serif text-2xl text-foreground tracking-wide text-left hover:text-primary transition-colors duration-500 group/title"
+                    >
+                      {track.title}
+                      <span className="ml-2 text-primary/0 group-hover/title:text-primary/60 text-base transition-colors duration-500">→</span>
+                    </button>
+                    <span className="font-sans text-xs text-muted-foreground tracking-widest shrink-0">{track.duration}</span>
                   </div>
                   <div className="font-sans text-[10px] text-primary tracking-[0.2em] uppercase">{track.genre}</div>
                   <p className="font-sans text-sm text-muted-foreground/80 font-light leading-relaxed max-w-2xl mt-2">

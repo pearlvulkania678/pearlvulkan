@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import { useListGallery, useListPoems } from "@workspace/api-client-react";
 
 // ─── Poem rendering (formerly Read) ──────────────────────────────────────────
@@ -25,6 +26,7 @@ function getVideoEmbed(src: string): { kind: "youtube" | "vimeo" | "file"; embed
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 export default function See() {
+  const [, navigate] = useLocation();
   const { data: poems = [], isLoading: poemsLoading } = useListPoems();
   const { data: items = [], isLoading: galleryLoading } = useListGallery();
 
@@ -69,9 +71,19 @@ export default function See() {
                     data-testid={`poem-${poem.id}`}
                     className="flex flex-col gap-8"
                   >
-                    {poem.title && (
-                      <h3 className="font-serif text-lg text-foreground tracking-wider italic">{poem.title}</h3>
-                    )}
+                    <div className="flex items-baseline justify-between gap-4">
+                      {poem.title ? (
+                        <h3 className="font-serif text-lg text-foreground tracking-wider italic">{poem.title}</h3>
+                      ) : (
+                        <span />
+                      )}
+                      <button
+                        onClick={() => navigate(`/see/${poem.id}`)}
+                        className="shrink-0 font-sans text-[9px] tracking-[0.25em] text-primary/40 hover:text-primary uppercase transition-colors duration-400 whitespace-nowrap"
+                      >
+                        open →
+                      </button>
+                    </div>
                     <div className="flex flex-col gap-8">
                       {blocks.map((block, bi) => {
                         if (block.type === "text") {
