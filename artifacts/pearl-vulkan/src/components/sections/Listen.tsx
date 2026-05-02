@@ -6,6 +6,7 @@ export default function Listen() {
   const { data: tracks = [], isLoading } = useListTracks();
   const [filter, setFilter] = useState<string>("ALL MUSIC");
   const [playing, setPlaying] = useState<number | null>(null);
+  const [playError, setPlayError] = useState<number | null>(null);
   const [scExpanded, setScExpanded] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -14,6 +15,7 @@ export default function Listen() {
 
   const handlePlay = (trackId: number, audioPath: string | null) => {
     if (!audioPath) return;
+    setPlayError(null);
     if (playing === trackId) {
       audioRef.current?.pause();
       setPlaying(null);
@@ -24,7 +26,14 @@ export default function Listen() {
     }
     const audio = new Audio(audioPath);
     audioRef.current = audio;
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      setPlaying(null);
+      setPlayError(trackId);
+    });
+    audio.onerror = () => {
+      setPlaying(null);
+      setPlayError(trackId);
+    };
     audio.onended = () => setPlaying(null);
     setPlaying(trackId);
   };
@@ -159,16 +168,13 @@ export default function Listen() {
                         {isScOpen ? "Close" : "SoundCloud"}
                       </button>
                     )}
-
-                    {!hasAudio && !hasSoundCloud && track.hasListen && (
-                      <button
-                        data-testid={`listen-btn-${track.id}`}
-                        className="self-start text-xs font-sans tracking-[0.2em] text-primary border border-primary/30 px-6 py-2 hover:bg-primary hover:text-primary-foreground transition-all duration-500 uppercase"
-                      >
-                        Listen
-                      </button>
-                    )}
                   </div>
+
+                  {playError === track.id && (
+                    <p className="font-sans text-[9px] tracking-[0.2em] text-red-400/60 uppercase mt-1">
+                      Could not load audio — check the file path in admin
+                    </p>
+                  )}
 
                   {hasSoundCloud && isScOpen && (
                     <motion.div
