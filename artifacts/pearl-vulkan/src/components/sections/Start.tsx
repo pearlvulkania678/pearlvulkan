@@ -32,28 +32,27 @@ export function StartBackground() {
   const { data } = useStartSettings();
   const s = data ?? DEFAULTS;
   if (!s.backgroundImage) return null;
+
   return (
-    <>
-      {/* Background image at controlled opacity */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
+    /* Image covers only the top 45vh of the section, fading out downward */
+    <div
+      className="absolute inset-x-0 top-0 pointer-events-none"
+      style={{ height: "45vh" }}
+    >
+      <img
+        src={s.backgroundImage}
+        alt=""
+        className="w-full h-full object-cover object-top"
         style={{ opacity: (s.bgOpacity ?? 15) / 100 }}
-      >
-        <img
-          src={s.backgroundImage}
-          alt=""
-          className="w-full h-full object-cover"
-        />
-      </div>
-      {/* Gradient fade — always fully opaque, independent of image opacity */}
+      />
+      {/* Fade the bottom of the image into the page background */}
       <div
-        className="absolute inset-x-0 bottom-0 z-0 pointer-events-none"
+        className="absolute inset-0"
         style={{
-          height: "60vh",
-          background: "linear-gradient(to bottom, transparent 0%, hsl(0, 0%, 10%) 100%)",
+          background: "linear-gradient(to bottom, transparent 20%, hsl(0,0%,10%) 100%)",
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -63,10 +62,9 @@ export default function Start() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 2, ease: "easeOut" }}
+      initial={{ y: 20 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 1.6, ease: "easeOut" }}
       className="w-full flex flex-col items-start justify-center"
     >
       <h1 className="font-serif text-5xl md:text-8xl tracking-[0.1em] text-primary uppercase mb-12">
@@ -75,13 +73,7 @@ export default function Start() {
         ))}
       </h1>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 3, delay: 1 }}
-        className="max-w-xl"
-      >
+      <div className="max-w-xl">
         {s.quote && (
           <p className="text-xl md:text-2xl text-foreground font-light leading-relaxed mb-6 font-serif italic">
             {s.quote}
@@ -92,7 +84,7 @@ export default function Start() {
             {s.tagline}
           </p>
         )}
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

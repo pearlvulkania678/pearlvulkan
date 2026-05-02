@@ -90,7 +90,7 @@ export default function Home() {
       <ScrollToTop />
 
       <main className="relative z-[1] pl-5 pr-8 md:pl-24 md:pr-48 max-w-7xl mx-auto flex flex-col">
-        <section id="start" className="relative overflow-hidden min-h-screen flex items-center py-20 md:py-24">
+        <section id="start" className="relative min-h-screen flex items-center py-20 md:py-24">
           <StartBackground />
           <Start />
         </section>
