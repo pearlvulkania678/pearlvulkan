@@ -2,7 +2,7 @@ import { db, activityLogTable } from "@workspace/db";
 
 export async function logActivity(
   action: "CREATE" | "UPDATE" | "DELETE",
-  entity: "track" | "poem" | "gallery",
+  entity: "track" | "poem" | "gallery" | "touch" | "sense",
   entityId: number,
   entityTitle: string | null,
 ) {
