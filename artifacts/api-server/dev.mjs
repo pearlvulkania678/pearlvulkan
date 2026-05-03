@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { context } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, cp } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 globalThis.require = createRequire(import.meta.url);
@@ -39,6 +39,9 @@ function shutdown() {
 }
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
+const migrationsSource = path.resolve(artifactDir, "../../lib/db/migrations");
+const migrationsDest = path.resolve(distDir, "migrations");
 
 console.log("[dev] cleaning dist...");
 await rm(distDir, { recursive: true, force: true });
@@ -78,11 +81,12 @@ const ctx = await context({
     {
       name: "restart-on-rebuild",
       setup(build) {
-        build.onEnd((result) => {
+        build.onEnd(async (result) => {
           if (result.errors.length > 0) {
             console.error(`[dev] build failed — server not restarted`);
             return;
           }
+          await cp(migrationsSource, migrationsDest, { recursive: true });
           console.log("[dev] build complete — (re)starting server...");
           startServer();
         });
