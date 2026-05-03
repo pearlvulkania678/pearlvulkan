@@ -40,6 +40,22 @@ const adminSocialLinksKey = ["admin", "social-links"] as const;
 const SESSION_KEY = "pv_admin_auth";
 const BASE = import.meta.env.BASE_URL;
 
+async function uploadToStorage(file: File): Promise<string> {
+  const res = await fetch(`${BASE}api/storage/uploads/request-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type || "application/octet-stream" }),
+  });
+  if (!res.ok) {
+    const j = await res.json() as { error?: string };
+    throw new Error(j.error ?? "Upload failed");
+  }
+  const { uploadURL, objectPath } = await res.json() as { uploadURL: string; objectPath: string };
+  const putRes = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+  if (!putRes.ok) throw new Error("Upload to storage failed");
+  return `${BASE}api/storage${objectPath}`;
+}
+
 type Tab = "start" | "tracks" | "see" | "touch" | "sense" | "links" | "log";
 const TAB_LABELS: Record<Tab, string> = { start: "start", tracks: "listen", see: "see", touch: "touch", sense: "sense", links: "links", log: "log" };
 
@@ -1040,18 +1056,11 @@ function PoemImageBlock({ blockIndex, src, caption, onChangeSrc, onChangeCaption
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
-  const BASE = import.meta.env.BASE_URL;
 
   const upload = async (file: File) => {
     setUploading(true); setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
-      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
-      const { url } = await res.json() as { url: string };
-      onChangeSrc(url);
-    } catch { setError("Upload failed"); }
+    try { onChangeSrc(await uploadToStorage(file)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Upload failed"); }
     finally { setUploading(false); }
   };
 
@@ -1133,18 +1142,11 @@ function AudioBlock({ blockIndex, src, onChangeSrc }: {
   const inputId = `audio-blk-${uid}-${blockIndex}`;
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const BASE = import.meta.env.BASE_URL;
 
   const upload = async (file: File) => {
     setUploading(true); setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
-      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
-      const { url } = await res.json() as { url: string };
-      onChangeSrc(url);
-    } catch { setError("Upload failed"); }
+    try { onChangeSrc(await uploadToStorage(file)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Upload failed"); }
     finally { setUploading(false); }
   };
 
@@ -1180,18 +1182,11 @@ function ImageUploadField({ value, onChange, inputId = "gallery-file-input" }: {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useState<HTMLInputElement | null>(null);
-  const BASE = import.meta.env.BASE_URL;
 
   const upload = async (file: File) => {
     setUploading(true); setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
-      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
-      const { url } = await res.json() as { url: string };
-      onChange(url);
-    } catch { setError("Upload failed — check connection"); }
+    try { onChange(await uploadToStorage(file)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Upload failed — check connection"); }
     finally { setUploading(false); }
   };
 
@@ -1269,18 +1264,11 @@ function AudioUploadField({ value, onChange }: { value: string; onChange: (url: 
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const BASE = import.meta.env.BASE_URL;
 
   const upload = async (file: File) => {
     setUploading(true); setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${BASE}api/upload`, { method: "POST", body: fd });
-      if (!res.ok) { const j = await res.json() as { error?: string }; setError(j.error ?? "Upload failed"); return; }
-      const { url } = await res.json() as { url: string };
-      onChange(url);
-    } catch { setError("Upload failed — check connection"); }
+    try { onChange(await uploadToStorage(file)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Upload failed — check connection"); }
     finally { setUploading(false); }
   };
 
