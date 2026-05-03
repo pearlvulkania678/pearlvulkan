@@ -56,11 +56,35 @@ bash scripts/restore-db.sh
 
 ---
 
-## Deploying
+## Hosting & deployment
 
-The site is deployed via Replit's publish feature. After publishing, it is live at a `.replit.app` domain (or a custom domain if configured).
+> **Important: GitHub Pages will not work for this project.**
+>
+> GitHub Pages only serves static HTML files. This site requires a live Node.js
+> server and a PostgreSQL database — neither of which GitHub Pages can run.
+> The correct platform is Replit.
 
-Uploaded files (images, audio) are stored in `artifacts/pearl-vulkan/public/uploads/` and are tracked in git, so they deploy with the code.
+### Publishing on Replit
+
+1. Open the project on [replit.com](https://replit.com)
+2. Click the **Publish** button in the top bar
+3. Replit builds the app and assigns a public URL: `https://<your-app>.replit.app`
+4. That URL works from any device, browser, or account — share it freely
+
+Uploaded files (images, audio) are stored in `artifacts/pearl-vulkan/public/uploads/`
+and are tracked in git, so they are included in every deployment automatically.
+
+### Connecting a custom domain (e.g. pearlvulkan.com)
+
+Once the site is published on Replit you can attach your own domain:
+
+1. In the Replit project, go to **Deployments → Custom domains**
+2. Enter your domain (e.g. `pearlvulkan.com` or `www.pearlvulkan.com`)
+3. Replit will show you a DNS record to add — typically a `CNAME` pointing to your `.replit.app` address
+4. Log in to your domain registrar (wherever you bought the domain — Namecheap, GoDaddy, Google Domains, etc.)
+5. Go to **DNS settings** and add the `CNAME` record Replit gave you
+6. Save and wait up to 24 hours for DNS to propagate (usually much faster)
+7. Replit provisions an SSL certificate automatically — no extra steps needed
 
 ---
 
