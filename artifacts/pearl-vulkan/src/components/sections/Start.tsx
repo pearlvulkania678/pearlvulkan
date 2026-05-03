@@ -65,7 +65,7 @@ export default function Start() {
       initial={{ y: 20 }}
       animate={{ y: 0 }}
       transition={{ duration: 1.6, ease: "easeOut" }}
-      className="w-full flex flex-col items-start justify-center"
+      className="relative z-[1] w-full flex flex-col items-start justify-center"
     >
       <h1 className="font-serif text-5xl md:text-8xl tracking-[0.1em] text-primary uppercase mb-12">
         {s.artistName.split(" ").map((word, i, arr) => (
