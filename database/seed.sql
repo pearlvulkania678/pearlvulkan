@@ -72,7 +72,7 @@ INSERT INTO public.sense_items (id, title, date, location, description, image_pa
 --
 
 INSERT INTO public.social_links (id, label, url, sort_order, published, created_at) VALUES (1, 'Youtube', 'https://www.youtube.com/watch?v=ngamb4mU0iI', 0, true, '2026-05-02 21:54:22.492449+00');
-INSERT INTO public.social_links (id, label, url, sort_order, published, created_at) VALUES (3, 'Contact', 'mailto:tiatianamus@gmail.com', 0, true, '2026-05-02 22:41:33.698908+00');
+INSERT INTO public.social_links (id, label, url, sort_order, published, created_at) VALUES (3, 'Contact', 'mailto:contact@pearlvulkan.com', 0, true, '2026-05-02 22:41:33.698908+00');
 
 
 --
